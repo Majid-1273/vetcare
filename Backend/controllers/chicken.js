@@ -1,4 +1,3 @@
-// controllers/chicken.js
 const ChickenBatch = require('../models/ChickenBatch');
 const ChickenType = require('../models/ChickenType');
 
@@ -36,34 +35,21 @@ exports.initializeChickenTypes = async (req, res) => {
   }
 };
 
-// Create a new chicken batch
+// Create a new chicken batch with auto-generated ID
 exports.createBatch = async (req, res) => {
   try {
-    const { batchNumber, chickenTypeId, initialCount, startDate } = req.body;
-    
-    // Validate chicken type
-    const chickenType = await ChickenType.findById(chickenTypeId);
-    if (!chickenType) {
-      return res.status(400).json({ message: 'Invalid chicken type' });
-    }
-    
-    // Check if batch number already exists
-    const existingBatch = await ChickenBatch.findOne({ batchNumber });
-    if (existingBatch) {
-      return res.status(400).json({ message: 'Batch number already exists' });
-    }
-    
+    const { name, breed, breedType, placementDate, initialCount } = req.body;
+
     const batch = new ChickenBatch({
-      batchNumber,
-      chickenType: chickenTypeId,
-      initialCount,
-      currentCount: initialCount,
-      startDate: startDate || new Date(),
-      createdBy: req.userId
+      name,
+      breed,
+      breedType,
+      placementDate,
+      initialCount
     });
-    
+
     await batch.save();
-    
+
     res.status(201).json({
       message: 'Chicken batch created successfully',
       batch
@@ -77,10 +63,7 @@ exports.createBatch = async (req, res) => {
 // Get all batches
 exports.getAllBatches = async (req, res) => {
   try {
-    const batches = await ChickenBatch.find()
-      .populate('chickenType', 'name')
-      .sort({ startDate: -1 });
-    
+    const batches = await ChickenBatch.find().sort({ placementDate: -1 });
     res.json(batches);
   } catch (error) {
     console.error('Get all batches error:', error);
@@ -88,34 +71,17 @@ exports.getAllBatches = async (req, res) => {
   }
 };
 
-// Get batches by type
-exports.getBatchesByType = async (req, res) => {
-  try {
-    const { typeId } = req.params;
-    
-    const batches = await ChickenBatch.find({ chickenType: typeId })
-      .populate('chickenType', 'name')
-      .sort({ startDate: -1 });
-    
-    res.json(batches);
-  } catch (error) {
-    console.error('Get batches by type error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// Get batch by ID
+// Get batch by generated ID (e.g., BATCH-001)
 exports.getBatchById = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const batch = await ChickenBatch.findById(id)
-      .populate('chickenType', 'name');
-    
+
+    const batch = await ChickenBatch.findOne({ id });
+
     if (!batch) {
       return res.status(404).json({ message: 'Batch not found' });
     }
-    
+
     res.json(batch);
   } catch (error) {
     console.error('Get batch by ID error:', error);
@@ -127,32 +93,22 @@ exports.getBatchById = async (req, res) => {
 exports.updateBatch = async (req, res) => {
   try {
     const { id } = req.params;
-    const { batchNumber, chickenTypeId, currentCount, active } = req.body;
-    
-    const batch = await ChickenBatch.findById(id);
+    const { name, breed, breedType, initialCount, placementDate } = req.body;
+
+    const batch = await ChickenBatch.findOne({ id });
     if (!batch) {
       return res.status(404).json({ message: 'Batch not found' });
     }
-    
-    // Update fields if provided
-    if (batchNumber) batch.batchNumber = batchNumber;
-    if (chickenTypeId) {
-      // Validate chicken type
-      const chickenType = await ChickenType.findById(chickenTypeId);
-      if (!chickenType) {
-        return res.status(400).json({ message: 'Invalid chicken type' });
-      }
-      batch.chickenType = chickenTypeId;
-    }
-    if (currentCount) batch.currentCount = currentCount;
-    if (active !== undefined) batch.active = active;
-    
+
+    if (name) batch.name = name;
+    if (breed) batch.breed = breed;
+    if (breedType) batch.breedType = breedType;
+    if (placementDate) batch.placementDate = placementDate;
+    if (initialCount !== undefined) batch.initialCount = initialCount;
+
     await batch.save();
-    
-    res.json({
-      message: 'Batch updated successfully',
-      batch
-    });
+
+    res.json({ message: 'Batch updated successfully', batch });
   } catch (error) {
     console.error('Update batch error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -163,12 +119,12 @@ exports.updateBatch = async (req, res) => {
 exports.deleteBatch = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const batch = await ChickenBatch.findByIdAndDelete(id);
+
+    const batch = await ChickenBatch.findOneAndDelete({ id });
     if (!batch) {
       return res.status(404).json({ message: 'Batch not found' });
     }
-    
+
     res.json({ message: 'Batch deleted successfully' });
   } catch (error) {
     console.error('Delete batch error:', error);
