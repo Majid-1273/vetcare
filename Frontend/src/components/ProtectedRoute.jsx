@@ -1,4 +1,3 @@
-// src/components/ProtectedRoute.js
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -6,15 +5,21 @@ import { useSelector } from 'react-redux';
 const ProtectedRoute = ({ allowedRoles }) => {
   const { isAuthenticated, user } = useSelector(state => state.auth);
 
-  // Check if user is authenticated and has the required role
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-
-  // If roles are specified, check if user has the required role
+  // 🚨 NEW: Redirect Farmer to /farm-details if farm is not registered
+  if (
+    user?.userType === 'Farmer' &&
+    allowedRoles.includes('Farmer') &&
+    user?.farmDetails === false
+  ) {
+    return <Navigate to="/farm-details" replace />;
+  }
+  // Check if user has the allowed role
   if (allowedRoles && allowedRoles.length > 0) {
     if (!user || !allowedRoles.includes(user.userType)) {
-      // Redirect to an appropriate page based on user type
       if (user && user.userType === 'Farmer') {
         return <Navigate to="/home" replace />;
       } else if (user && user.userType === 'Vet') {
@@ -25,7 +30,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
     }
   }
 
-  // User is authenticated and has required role (if any)
+
+
+  // All checks passed
   return <Outlet />;
 };
 
