@@ -26,7 +26,7 @@ exports.register = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user._id }, config.secret, {
-      expiresIn: config.expiresIn
+      
     });
 
     // Create a login session
@@ -75,7 +75,6 @@ exports.login = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user._id }, config.secret, {
-      expiresIn: config.expiresIn
     });
 
     // Create a login session
