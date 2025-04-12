@@ -1,5 +1,4 @@
 // config/jwt.js
 module.exports = {
     secret: process.env.JWT_SECRET || 'vetcare-secret-key',
-    expiresIn: '2m',
   };
