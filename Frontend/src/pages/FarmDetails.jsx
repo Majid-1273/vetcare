@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUserFarmRegistered } from '../redux/slices/authSlice';
 
 const FarmInfoForm = () => {
+  const navigate = useNavigate(); // Now inside the component
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const [formData, setFormData] = useState({
     farmName: '',
     location: '',
@@ -22,12 +28,35 @@ const FarmInfoForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Process form submission
-    console.log("Form submitted:", formData);
-    // Here you would typically send the data to your backend
-    alert("Farm information saved successfully!");
+  
+    try {
+      const token = localStorage.getItem('token'); // Make sure the token exists
+  
+      const response = await fetch('http://localhost:5000/api/farm/createFarm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        alert("Farm information saved successfully!");
+        dispatch(setUserFarmRegistered());
+        navigate('/home'); // Navigate to home after success
+      } else {
+        console.error("Server responded with error:", data);
+        alert(`Server error: ${data.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Network or runtime error:", error);
+      alert("An error occurred while saving the farm info.");
+    }
   };
 
   return (
@@ -153,6 +182,7 @@ const FarmInfoForm = () => {
                 <div className="pt-2">
                   <h3 className="text-md font-medium text-gray-700 mb-3">Registration Details (Optional)</h3>
                   
+
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>

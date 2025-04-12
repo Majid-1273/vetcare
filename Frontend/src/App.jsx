@@ -1,5 +1,9 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+// src/App.js
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Provider } from 'react-redux';
+import { store } from './redux/store';
+import { setupAxiosInterceptors } from "./services/auth";
 import Sidebar from "./components/common/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -11,19 +15,13 @@ import Chatbot from "./pages/Chatbot";
 import ReportsAndAnalytics from "./pages/ReportsAndAnalytics";
 import LayerDetails from "./pages/LayerDetails";
 import BroilerDetails from "./pages/BroilerDetails";
-
-const isAuthenticated = () => localStorage.getItem("authToken") !== null;
-
-const ProtectedRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to="/dashboard" replace />;
-};
+import ProtectedRoute from "./components/ProtectedRoute";
+import FarmInfoForm from "./pages/FarmDetails";
 
 const AuthenticatedLayout = ({ children }) => {
-  const location = useLocation();
-
   return (
     <div className="flex h-screen bg-white overflow-hidden">
-      <Sidebar location={location} />
+      <Sidebar />
       <div className="flex-1 ml-24 bg-white flex flex-col h-screen overflow-auto">
         {children}
       </div>
@@ -32,63 +30,80 @@ const AuthenticatedLayout = ({ children }) => {
 };
 
 function App() {
+  useEffect(() => {
+    // Setup axios interceptors for authentication
+    setupAxiosInterceptors();
+  }, []);
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={
-          // <ProtectedRoute>
-          <AuthenticatedLayout>
-            <Home />
-          </AuthenticatedLayout>
-          // </ProtectedRoute>
-        } />
-        <Route path="/flock-management" element={
-          // <ProtectedRoute>
-          <AuthenticatedLayout>
-            <PoultryManagement />
-          </AuthenticatedLayout>
-          // </ProtectedRoute>
-        } />
-        <Route path="/vet-locator" element={
-          // <ProtectedRoute>
-          <AuthenticatedLayout>
-            <VetLocator />
-          </AuthenticatedLayout>
-          // </ProtectedRoute>
-        } />
-        <Route path="/chatbot" element={
-          // <ProtectedRoute>
-          <AuthenticatedLayout>
-            <Chatbot />
-          </AuthenticatedLayout>
-          // </ProtectedRoute>
-        } />
-        <Route path="/reports-&-analytics" element={
-          // <ProtectedRoute>
-          <AuthenticatedLayout>
-            <ReportsAndAnalytics />
-          </AuthenticatedLayout>
-          // </ProtectedRoute>
-        } />
+    <Provider store={store}>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Protected routes using the new ProtectedRoute component */}
+          <Route element={<ProtectedRoute allowedRoles={['Farmer']} />}>
+            <Route path="/home" element={
+              <AuthenticatedLayout>
+                <Home />
+              </AuthenticatedLayout>
+            } />
+            
+            <Route path="/flock-management" element={
+              <AuthenticatedLayout>
+                <PoultryManagement />
+              </AuthenticatedLayout>
+            } />
+            
+            <Route path="/vet-locator" element={
+              <AuthenticatedLayout>
+                <VetLocator />
+              </AuthenticatedLayout>
+            } />
+            
+            <Route path="/reports-&-analytics" element={
+              <AuthenticatedLayout>
+                <ReportsAndAnalytics />
+              </AuthenticatedLayout>
+            } />
+          </Route>
 
-        <Route path="/layer/:id" element={
-          <AuthenticatedLayout>
-            <LayerDetails />
-          </AuthenticatedLayout>
-        } />
-
-        <Route path="/broiler/:id" element={
-          <AuthenticatedLayout>
-            <BroilerDetails />
-          </AuthenticatedLayout>
-        } />
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Router>
+          <Route path="/farm-details" element={
+              <AuthenticatedLayout>
+                <FarmInfoForm />
+              </AuthenticatedLayout>
+            } />
+          
+          {/* Routes for both Farmer and Vet */}
+          <Route element={<ProtectedRoute allowedRoles={['Farmer', 'Vet']} />}>
+            <Route path="/chatbot" element={
+              <AuthenticatedLayout>
+                <Chatbot />
+              </AuthenticatedLayout>
+            } />
+            
+            <Route path="/layer/:id" element={
+              <AuthenticatedLayout>
+                <LayerDetails />
+              </AuthenticatedLayout>
+            } />
+            
+            <Route path="/broiler/:id" element={
+              <AuthenticatedLayout>
+                <BroilerDetails />
+              </AuthenticatedLayout>
+            } />
+          </Route>
+          
+          {/* Default route */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Router>
+    </Provider>
   );
 }
 
