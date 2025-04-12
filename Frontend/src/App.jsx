@@ -71,11 +71,7 @@ function App() {
             } />
           </Route>
 
-          <Route path="/farm-details" element={
-              <AuthenticatedLayout>
-                <FarmInfoForm />
-              </AuthenticatedLayout>
-            } />
+          <Route path="/farm-details" element={<FarmInfoForm />} />
           
           {/* Routes for both Farmer and Vet */}
           <Route element={<ProtectedRoute allowedRoles={['Farmer', 'Vet']} />}>
