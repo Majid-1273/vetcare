@@ -5,7 +5,6 @@ const LoginSession = require('../models/LoginSession');
 const config = require('../config/jwt');
 
 // Register a new user
-// Register a new user
 exports.register = async (req, res) => {
   try {
     const { username, email, password, userType } = req.body;
@@ -98,29 +97,6 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-
-// Get current user profile
-exports.getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        userType: user.userType
-      }
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
