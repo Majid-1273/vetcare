@@ -17,18 +17,18 @@ exports.getAllChickenTypes = async (req, res) => {
 exports.initializeChickenTypes = async (req, res) => {
   try {
     const count = await ChickenType.countDocuments();
-    
+
     if (count === 0) {
       const types = [
         { name: 'broiler', description: 'Broiler chicken type' },
         { name: 'layer', description: 'Layer chicken type' },
         { name: 'hybrid', description: 'Hybrid chicken type' }
       ];
-      
+
       await ChickenType.insertMany(types);
       return res.status(201).json({ message: 'Chicken types initialized successfully', types });
     }
-    
+
     res.json({ message: 'Chicken types already initialized' });
   } catch (error) {
     console.error('Initialize chicken types error:', error);
@@ -136,10 +136,13 @@ exports.deleteBatch = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const batch = await ChickenBatch.findOneAndDelete({ id });
+    console.log(id);
+
+    const batch = await ChickenBatch.findByIdAndDelete(id);
     if (!batch) {
       return res.status(404).json({ message: 'Batch not found' });
     }
+
 
     res.json({ message: 'Batch deleted successfully' });
   } catch (error) {
