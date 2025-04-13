@@ -14,16 +14,16 @@ function DailyMortalityTracking() {
   const recordsPerPage = 10;
 
   // State for edit mode
-  const [editingRow, setEditingRow] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    date: '',
-    totalBirdsCount: 0,
-    deadBirdsCount: 0
-  });
+  // const [editingRow, setEditingRow] = useState(null);
+  // const [editFormData, setEditFormData] = useState({
+  //   date: '',
+  //   totalBirdsCount: 0,
+  //   deadBirdsCount: 0
+  // });
 
   // State for modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [rowToDelete, setRowToDelete] = useState(null);
+  // const [showDeleteModal, setShowDeleteModal] = useState(false);
+  // const [rowToDelete, setRowToDelete] = useState(null);
 
   // State for add new record modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -116,81 +116,81 @@ function DailyMortalityTracking() {
   };
 
   // Delete row handler
-  const handleDeleteClick = (id) => {
-    setRowToDelete(id);
-    setShowDeleteModal(true);
-  };
+  // const handleDeleteClick = (id) => {
+  //   setRowToDelete(id);
+  //   setShowDeleteModal(true);
+  // };
 
   // Confirm delete - in a real app, you would call an API to delete the record
-  const confirmDelete = async () => {
-    try {
-      // Here you would typically make a DELETE API call
-      // await axios.delete(`http://localhost:5000/api/mortality/${rowToDelete}`);
-      
-      // For now, just remove from local state
-      setMortalityData(mortalityData.filter(row => row.id !== rowToDelete));
-      setShowDeleteModal(false);
-      setRowToDelete(null);
-    } catch (err) {
-      console.error("Error deleting record:", err);
-      setError("Failed to delete record. Please try again.");
-    }
-  };
+  // const confirmDelete = async () => {
+  //   try {
+  //     // Here you would typically make a DELETE API call
+  //     // await axios.delete(`http://localhost:5000/api/mortality/${rowToDelete}`);
+  //     
+  //     // For now, just remove from local state
+  //     setMortalityData(mortalityData.filter(row => row.id !== rowToDelete));
+  //     setShowDeleteModal(false);
+  //     setRowToDelete(null);
+  //   } catch (err) {
+  //     console.error("Error deleting record:", err);
+  //     setError("Failed to delete record. Please try again.");
+  //   }
+  // };
 
   // Edit row handler
-  const handleEditClick = (row) => {
-    setEditingRow(row.id);
-    setEditFormData({
-      date: row.date,
-      totalBirdsCount: row.totalBirds,
-      deadBirdsCount: row.deaths
-    });
-  };
+  // const handleEditClick = (row) => {
+  //   setEditingRow(row.id);
+  //   setEditFormData({
+  //     date: row.date,
+  //     totalBirdsCount: row.totalBirds,
+  //     deadBirdsCount: row.deaths
+  //   });
+  // };
 
   // Handle edit form change
-  const handleEditFormChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData({
-      ...editFormData,
-      [name]: name === 'date' ? value : parseInt(value) || 0
-    });
-  };
+  // const handleEditFormChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setEditFormData({
+  //     ...editFormData,
+  //     [name]: name === 'date' ? value : parseInt(value) || 0
+  //   });
+  // };
 
   // Save edited row - in a real app, you would call an API to update the record
-  const handleSaveClick = async (id) => {
-    try {
-      // Here you would typically make a PUT/PATCH API call
-      // Update would usually be handled by the backend
-      
-      // For now, just update in local state
-      const mortalityPercent = (editFormData.deadBirdsCount / editFormData.totalBirdsCount * 100);
-      
-      // Find the row and its index
-      const rowIndex = mortalityData.findIndex(row => row.id === id);
-      
-      // Update local state
-      const updatedData = [...mortalityData];
-      updatedData[rowIndex] = {
-        ...updatedData[rowIndex],
-        date: editFormData.date,
-        totalBirds: editFormData.totalBirdsCount,
-        deaths: editFormData.deadBirdsCount,
-        mortalityPercent: mortalityPercent
-        // Note: cumulativeLoss would typically be recalculated by the backend
-      };
-      
-      setMortalityData(updatedData);
-      setEditingRow(null);
-    } catch (err) {
-      console.error("Error updating record:", err);
-      setError("Failed to update record. Please try again.");
-    }
-  };
+  // const handleSaveClick = async (id) => {
+  //   try {
+  //     // Here you would typically make a PUT/PATCH API call
+  //     // Update would usually be handled by the backend
+  //     
+  //     // For now, just update in local state
+  //     const mortalityPercent = (editFormData.deadBirdsCount / editFormData.totalBirdsCount * 100);
+  //     
+  //     // Find the row and its index
+  //     const rowIndex = mortalityData.findIndex(row => row.id === id);
+  //     
+  //     // Update local state
+  //     const updatedData = [...mortalityData];
+  //     updatedData[rowIndex] = {
+  //       ...updatedData[rowIndex],
+  //       date: editFormData.date,
+  //       totalBirds: editFormData.totalBirdsCount,
+  //       deaths: editFormData.deadBirdsCount,
+  //       mortalityPercent: mortalityPercent
+  //       // Note: cumulativeLoss would typically be recalculated by the backend
+  //     };
+  //     
+  //     setMortalityData(updatedData);
+  //     setEditingRow(null);
+  //   } catch (err) {
+  //     console.error("Error updating record:", err);
+  //     setError("Failed to update record. Please try again.");
+  //   }
+  // };
 
   // Cancel edit
-  const handleCancelClick = () => {
-    setEditingRow(null);
-  };
+  // const handleCancelClick = () => {
+  //   setEditingRow(null);
+  // };
 
   // Handle new record form change
   const handleNewRecordChange = (e) => {
@@ -322,127 +322,53 @@ function DailyMortalityTracking() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr className="bg-gray-50">
-                <th className="py-3 px-4 text-left">
-                  <input
-                    type="checkbox"
-                    checked={areAllSelected}
-                    onChange={toggleAllRowsSelection}
-                    className="rounded border-gray-300 text-green-500 focus:ring-green-500"
-                  />
-                </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Birds</th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deaths</th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mortality %</th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cumulative Loss</th>
-                <th className="py-3 px-4 text-right"></th>
+                {/* <th className="py-3 px-4 text-right"></th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {currentRecords.length > 0 ? (
                 currentRecords.map((row) => (
                   <tr key={row.id} className={`${row.selected ? 'bg-green-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}>
-                    <td className="py-4 px-4">
-                      <input
-                        type="checkbox"
-                        checked={row.selected}
-                        onChange={() => toggleRowSelection(row.id)}
-                        className="rounded border-gray-300 text-green-500 focus:ring-green-500"
-                      />
+                    {/* View mode (Edit mode commented out) */}
+                    <td className="py-4 px-4 font-medium">{row.date}</td>
+                    <td className="py-4 px-4">{row.totalBirds}</td>
+                    <td className="py-4 px-4 text-red-600">{row.deaths}</td>
+                    <td className="py-4 px-4 font-medium">{row.mortalityPercent.toFixed(2)}%</td>
+                    <td className="py-4 px-4">{row.cumulativeLoss}</td>
+                    {/* Commented out edit/delete buttons
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => handleEditClick(row)}
+                          className="text-gray-600 hover:text-blue-600 focus:outline-none"
+                          title="Edit"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(row.id)}
+                          className="text-gray-600 hover:text-red-600 focus:outline-none"
+                          title="Delete"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
-
-                    {editingRow === row.id ? (
-                      // Edit mode
-                      <>
-                        <td className="py-2 px-4">
-                          <input
-                            type="date"
-                            name="date"
-                            value={editFormData.date}
-                            onChange={handleEditFormChange}
-                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                          />
-                        </td>
-                        <td className="py-2 px-4">
-                          <input
-                            type="number"
-                            name="totalBirdsCount"
-                            value={editFormData.totalBirdsCount}
-                            onChange={handleEditFormChange}
-                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                          />
-                        </td>
-                        <td className="py-2 px-4">
-                          <input
-                            type="number"
-                            name="deadBirdsCount"
-                            value={editFormData.deadBirdsCount}
-                            onChange={handleEditFormChange}
-                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                          />
-                        </td>
-                        <td className="py-2 px-4 font-medium">
-                          {(editFormData.deadBirdsCount / editFormData.totalBirdsCount * 100).toFixed(2)}%
-                        </td>
-                        <td className="py-2 px-4">{row.cumulativeLoss}</td>
-                        <td className="py-2 px-4 text-right">
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => handleSaveClick(row.id)}
-                              className="text-green-600 hover:text-green-800 focus:outline-none"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={handleCancelClick}
-                              className="text-red-600 hover:text-red-800 focus:outline-none"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    ) : (
-                      // View mode
-                      <>
-                        <td className="py-4 px-4 font-medium">{row.date}</td>
-                        <td className="py-4 px-4">{row.totalBirds}</td>
-                        <td className="py-4 px-4 text-red-600">{row.deaths}</td>
-                        <td className="py-4 px-4 font-medium">{row.mortalityPercent.toFixed(2)}%</td>
-                        <td className="py-4 px-4">{row.cumulativeLoss}</td>
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => handleEditClick(row)}
-                              className="text-gray-600 hover:text-blue-600 focus:outline-none"
-                              title="Edit"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(row.id)}
-                              className="text-gray-600 hover:text-red-600 focus:outline-none"
-                              title="Delete"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    )}
+                    */}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="py-6 text-center text-gray-500">
+                  <td colSpan="5" className="py-6 text-center text-gray-500">
                     No mortality records found. Add a record to get started.
                   </td>
                 </tr>
@@ -489,7 +415,7 @@ function DailyMortalityTracking() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Confirmation Modal - Commented out
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
@@ -511,7 +437,7 @@ function DailyMortalityTracking() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Add New Record Modal */}
         {showAddModal && (

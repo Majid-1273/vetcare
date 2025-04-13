@@ -1,5 +1,5 @@
 const Vaccination = require('../models/Vaccination');
-const ChickenBatch = require('../models/ChickenBatch');
+const Batch = require('../models/ChickenBatch');
 
 // Create a new vaccination record
 exports.createVaccination = async (req, res) => {
@@ -12,7 +12,7 @@ exports.createVaccination = async (req, res) => {
       petName
     } = req.body;
 
-    const batch = await ChickenBatch.findById(batchId);
+    const batch = await Batch.findById(batchId);
     if (!batch) {
       return res.status(400).json({ message: 'Invalid batch ID' });
     }
@@ -44,7 +44,7 @@ exports.getVaccinationsByBatch = async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    const batch = await ChickenBatch.findById(batchId);
+    const batch = await Batch.findById(batchId);
     if (!batch) {
       return res.status(400).json({ message: 'Invalid batch ID' });
     }

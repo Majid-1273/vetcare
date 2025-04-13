@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const vaccinationSchema = new mongoose.Schema({
   batchId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ChickenBatch',
+    ref: 'Batch',
     required: true
   },
   batchName: {
