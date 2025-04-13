@@ -1,4 +1,3 @@
-// models/MortalityRecord.js
 const mongoose = require('mongoose');
 
 const mortalityRecordSchema = new mongoose.Schema({

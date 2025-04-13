@@ -1,26 +1,12 @@
-// models/FeedRecord.js
 const mongoose = require('mongoose');
 
 const feedRecordSchema = new mongoose.Schema({
-  batchId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ChickenBatch',
+  ageGroup: {
+    type: String,
     required: true
   },
   feedType: {
     type: String,
-    required: true
-  },
-  weekNumber: {
-    type: Number,
-    required: true
-  },
-  weekStartDate: {
-    type: Date,
-    required: true
-  },
-  weekEndDate: {
-    type: Date,
     required: true
   },
   avgConsumptionPerBird: {

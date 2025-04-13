@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Map, MapPin, Phone, Clock, Star, Filter, Heart, Navigation, Search } from 'lucide-react';
+import vetcareImage from '../assets/images/vetcare.png';
 
 const VetLocator = () => {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -18,7 +19,7 @@ const VetLocator = () => {
       hours: "Open · Closes 6 PM",
       phone: "(555) 123-4567",
       specialties: ["Small Animals", "Emergency"],
-      image: "/api/placeholder/60/60"
+      image: vetcareImage
     },
     {
       id: 2,
@@ -30,7 +31,7 @@ const VetLocator = () => {
       hours: "Open · Closes 5 PM",
       phone: "(555) 987-6543",
       specialties: ["Large Animals", "Farm Calls"],
-      image: "/api/placeholder/60/60"
+      image: vetcareImage
     },
     {
       id: 3,
@@ -42,7 +43,7 @@ const VetLocator = () => {
       hours: "Open · Closes 8 PM",
       phone: "(555) 456-7890",
       specialties: ["Exotic Pets", "Surgery"],
-      image: "/api/placeholder/60/60"
+      image: vetcareImage
     },
     {
       id: 4,
@@ -54,7 +55,7 @@ const VetLocator = () => {
       hours: "Open · Closes 6 PM",
       phone: "(555) 234-5678",
       specialties: ["Mobile", "Farm Calls"],
-      image: "/api/placeholder/60/60"
+      image: vetcareImage
     },
     {
       id: 5,
@@ -66,9 +67,10 @@ const VetLocator = () => {
       hours: "Open · Closes 5:30 PM",
       phone: "(555) 876-5432",
       specialties: ["Equine", "Reproductive"],
-      image: "/api/placeholder/60/60"
+      image: vetcareImage
     }
   ];
+  
 
   // Toggle favorite status
   const toggleFavorite = (vetId) => {
@@ -201,7 +203,10 @@ const VetLocator = () => {
             {filteredVets.map(vet => (
               <div key={vet.id} className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
                 <div className="flex">
-                  <img src={vet.image} alt={vet.name} className="w-16 h-16 rounded-lg object-cover mr-4" />
+                <div className="w-16 h-16 mr-4 flex items-center justify-center bg-gray-100 rounded-lg">
+  <img src={vet.image} alt={vet.name} className="w-14 h-14 object-contain" />
+</div>
+
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <h2 className="text-lg font-medium text-gray-800">{vet.name}</h2>

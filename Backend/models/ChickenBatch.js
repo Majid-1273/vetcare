@@ -23,4 +23,4 @@ const chickenBatchSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('ChickenBatch', chickenBatchSchema);
+module.exports = mongoose.model('Batch', chickenBatchSchema);

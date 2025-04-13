@@ -7,43 +7,29 @@ exports.createFeedRecord = async (req, res) => {
   try {
     const {
       batchId,
+      ageGroup,
       feedType,
-      weekNumber,
-      weekStartDate,
-      weekEndDate,
       avgConsumptionPerBird,
       totalFeedUsed
     } = req.body;
-    
-    // Validate batch
+
+    // Validate that the batchId exists in the ChickenBatch collection
     const batch = await ChickenBatch.findById(batchId);
     if (!batch) {
-      return res.status(400).json({ message: 'Invalid batch ID' });
+      return res.status(400).json({ message: 'Invalid batch ID. The batch does not exist.' });
     }
-    
-    // Check if record for this week already exists
-    const existingRecord = await FeedRecord.findOne({
-      batchId,
-      weekNumber
-    });
-    
-    if (existingRecord) {
-      return res.status(400).json({ message: 'Feed record for this week already exists' });
-    }
-    
+
     const feedRecord = new FeedRecord({
       batchId,
+      ageGroup,
       feedType,
-      weekNumber,
-      weekStartDate,
-      weekEndDate,
       avgConsumptionPerBird,
       totalFeedUsed,
-      createdBy: req.userId
+      createdBy: req.userId  // Assuming userId is passed from middleware
     });
-    
+
     await feedRecord.save();
-    
+
     res.status(201).json({
       message: 'Feed record created successfully',
       feedRecord
@@ -66,7 +52,7 @@ exports.getFeedRecordsByBatch = async (req, res) => {
     }
     
     const feedRecords = await FeedRecord.find({ batchId })
-      .sort({ weekNumber: 1 });
+      .sort({ createdAt: 1 });
     
     res.json(feedRecords);
   } catch (error) {
@@ -94,55 +80,51 @@ exports.getFeedRecordById = async (req, res) => {
 
 // Update feed record
 exports.updateFeedRecord = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const {
-        feedType,
-        weekNumber,
-        weekStartDate,
-        weekEndDate,
-        avgConsumptionPerBird,
-        totalFeedUsed
-      } = req.body;
-      
-      const feedRecord = await FeedRecord.findById(id);
-      if (!feedRecord) {
-        return res.status(404).json({ message: 'Feed record not found' });
-      }
-      
-      // Update fields if provided
-      if (feedType) feedRecord.feedType = feedType;
-      if (weekNumber) feedRecord.weekNumber = weekNumber;
-      if (weekStartDate) feedRecord.weekStartDate = weekStartDate;
-      if (weekEndDate) feedRecord.weekEndDate = weekEndDate;
-      if (avgConsumptionPerBird !== undefined) feedRecord.avgConsumptionPerBird = avgConsumptionPerBird;
-      if (totalFeedUsed !== undefined) feedRecord.totalFeedUsed = totalFeedUsed;
-      
-      await feedRecord.save();
-      
-      res.json({
-        message: 'Feed record updated successfully',
-        feedRecord
-      });
-    } catch (error) {
-      console.error('Update feed record error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+  try {
+    const { id } = req.params;
+    const { 
+      ageGroup, 
+      feedType, 
+      avgConsumptionPerBird, 
+      totalFeedUsed 
+    } = req.body;
+    
+    const feedRecord = await FeedRecord.findById(id);
+    if (!feedRecord) {
+      return res.status(404).json({ message: 'Feed record not found' });
     }
-  };
-  
-  // Delete feed record
-  exports.deleteFeedRecord = async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const feedRecord = await FeedRecord.findByIdAndDelete(id);
-      if (!feedRecord) {
-        return res.status(404).json({ message: 'Feed record not found' });
-      }
-      
-      res.json({ message: 'Feed record deleted successfully' });
-    } catch (error) {
-      console.error('Delete feed record error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+    
+    // Update fields if provided
+    if (ageGroup) feedRecord.ageGroup = ageGroup;
+    if (feedType) feedRecord.feedType = feedType;
+    if (avgConsumptionPerBird !== undefined) feedRecord.avgConsumptionPerBird = avgConsumptionPerBird;
+    if (totalFeedUsed !== undefined) feedRecord.totalFeedUsed = totalFeedUsed;
+    
+    await feedRecord.save();
+    
+    res.json({
+      message: 'Feed record updated successfully',
+      feedRecord
+    });
+  } catch (error) {
+    console.error('Update feed record error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Delete feed record
+exports.deleteFeedRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const feedRecord = await FeedRecord.findByIdAndDelete(id);
+    if (!feedRecord) {
+      return res.status(404).json({ message: 'Feed record not found' });
     }
-  };
+    
+    res.json({ message: 'Feed record deleted successfully' });
+  } catch (error) {
+    console.error('Delete feed record error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

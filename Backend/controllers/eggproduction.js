@@ -20,11 +20,10 @@ exports.createEggProduction = async (req, res) => {
       return res.status(400).json({ message: 'Invalid batch ID' });
     }
     
-    // Verify batch is of type layer or hybrid
-    const batchWithType = await ChickenBatch.findById(batchId).populate('chickenType');
-    if (!batchWithType || (batchWithType.chickenType.name !== 'layer' && batchWithType.chickenType.name !== 'hybrid')) {
+    if (!batch || (batch.breedType !== 'layer' && batch.breedType !== 'hybrid')) {
       return res.status(400).json({ message: 'Egg production records can only be added for layer or hybrid chicken types' });
     }
+    
     
     // Check if record for this date already exists
     const existingRecord = await EggProduction.findOne({

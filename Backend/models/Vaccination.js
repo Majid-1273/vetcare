@@ -1,10 +1,13 @@
-// models/Vaccination.js
 const mongoose = require('mongoose');
 
 const vaccinationSchema = new mongoose.Schema({
   batchId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ChickenBatch',
+    required: true
+  },
+  batchName: {
+    type: String,
     required: true
   },
   vaccinationType: {
@@ -15,15 +18,8 @@ const vaccinationSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  batchNumber: {
-    type: String,
-    required: true
-  },
   nextDoseDate: {
     type: Date
-  },
-  notes: {
-    type: String
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
