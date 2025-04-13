@@ -10,6 +10,10 @@ const vaccinationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  petName: {
+    type: String,
+    required: true
+  },
   vaccinationType: {
     type: String,
     required: true

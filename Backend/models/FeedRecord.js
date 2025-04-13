@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const feedRecordSchema = new mongoose.Schema({
+  batchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ChickenBatch',
+    required: true
+  },
   ageGroup: {
     type: String,
     required: true

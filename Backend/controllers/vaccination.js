@@ -8,7 +8,8 @@ exports.createVaccination = async (req, res) => {
       batchId,
       vaccinationType,
       dateGiven,
-      nextDoseDate
+      nextDoseDate,
+      petName
     } = req.body;
 
     const batch = await ChickenBatch.findById(batchId);
@@ -22,6 +23,7 @@ exports.createVaccination = async (req, res) => {
       vaccinationType,
       dateGiven,
       nextDoseDate,
+      petName,
       createdBy: req.userId
     });
 
@@ -82,7 +84,7 @@ exports.updateVaccination = async (req, res) => {
       vaccinationType,
       dateGiven,
       nextDoseDate,
-      notes
+      petName
     } = req.body;
 
     const vaccination = await Vaccination.findById(id);
@@ -93,7 +95,7 @@ exports.updateVaccination = async (req, res) => {
     if (vaccinationType) vaccination.vaccinationType = vaccinationType;
     if (dateGiven) vaccination.dateGiven = dateGiven;
     if (nextDoseDate !== undefined) vaccination.nextDoseDate = nextDoseDate;
-    if (notes !== undefined) vaccination.notes = notes;
+    if (petName !== undefined) vaccination.petName = petName;
 
     await vaccination.save();
 
