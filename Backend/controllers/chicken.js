@@ -1,5 +1,6 @@
 const ChickenBatch = require('../models/ChickenBatch');
 const ChickenType = require('../models/ChickenType');
+const MortalityRecord = require('../models/MortalityRecord');
 
 // Get all chicken types
 exports.getAllChickenTypes = async (req, res) => {
@@ -64,7 +65,22 @@ exports.createBatch = async (req, res) => {
 exports.getAllBatches = async (req, res) => {
   try {
     const batches = await ChickenBatch.find().sort({ placementDate: -1 });
-    res.json(batches);
+
+    const batchWithCurrentCount = await Promise.all(
+      batches.map(async (batch) => {
+        const mortalityRecords = await MortalityRecord.find({ batchId: batch._id });
+
+        const totalDeaths = mortalityRecords.reduce((sum, record) => sum + record.deadBirdsCount, 0);
+        const currentCount = batch.initialCount - totalDeaths;
+
+        return {
+          ...batch._doc,
+          currentCount,
+        };
+      })
+    );
+
+    res.json(batchWithCurrentCount);
   } catch (error) {
     console.error('Get all batches error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
