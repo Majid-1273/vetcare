@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setUserFarmRegistered } from '../redux/slices/authSlice';
 
 const FarmInfoForm = () => {
-  const navigate = useNavigate(); // Now inside the component
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const [formData, setFormData] = useState({
@@ -12,7 +12,7 @@ const FarmInfoForm = () => {
     location: '',
     ownerManager: '',
     contactPhone: '',
-    contactEmail: '',
+    contactEmail: user?.email || '',
     farmCapacity: '',
     flockSize: '',
     registrationNumber: '',
@@ -21,18 +21,27 @@ const FarmInfoForm = () => {
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value
-    }));
+    const { name, value, type } = e.target;
+    
+    // For number inputs, ensure we're storing numeric values
+    if (type === 'number') {
+      setFormData(prevData => ({
+        ...prevData,
+        [name]: value === '' ? '' : Number(value)
+      }));
+    } else {
+      setFormData(prevData => ({
+        ...prevData,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
   
     try {
-      const token = localStorage.getItem('token'); // Make sure the token exists
+      const token = localStorage.getItem('token');
   
       const response = await fetch('http://localhost:5000/api/farm/createFarm', {
         method: 'POST',
@@ -46,9 +55,8 @@ const FarmInfoForm = () => {
       const data = await response.json();
   
       if (response.ok) {
-        alert("Farm information saved successfully!");
         dispatch(setUserFarmRegistered());
-        navigate('/home'); // Navigate to home after success
+        navigate('/flock-management');
       } else {
         console.error("Server responded with error:", data);
         alert(`Server error: ${data.message || 'Unknown error'}`);
@@ -74,7 +82,7 @@ const FarmInfoForm = () => {
         </div>
 
         {/* Main Form Card */}
-        <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 border-l-4 border-green-500">
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column */}
@@ -132,6 +140,8 @@ const FarmInfoForm = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="(555) 123-4567"
+                    pattern="[0-9() -]+"
+                    title="Please enter a valid phone number"
                   />
                 </div>
 
@@ -154,10 +164,12 @@ const FarmInfoForm = () => {
                 <div>
                   <label htmlFor="farmCapacity" className="block text-sm font-medium text-gray-700 mb-1">Farm Capacity (acres)*</label>
                   <input
-                    type="text"
+                    type="number"
                     id="farmCapacity"
                     name="farmCapacity"
                     required
+                    min="0"
+                    step="0.01"
                     value={formData.farmCapacity}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -168,9 +180,10 @@ const FarmInfoForm = () => {
                 <div>
                   <label htmlFor="flockSize" className="block text-sm font-medium text-gray-700 mb-1">Flock Size</label>
                   <input
-                    type="text"
+                    type="number"
                     id="flockSize"
                     name="flockSize"
+                    min="0"
                     value={formData.flockSize}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -180,9 +193,8 @@ const FarmInfoForm = () => {
 
                 {/* Registration Details Section */}
                 <div className="pt-2">
-                  <h3 className="text-md font-medium text-gray-700 mb-3">Registration Details (Optional)</h3>
+                  <h3 className="text-md font-medium text-green-700 mb-3">Registration Details (Optional)</h3>
                   
-
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
@@ -230,13 +242,14 @@ const FarmInfoForm = () => {
             <div className="mt-8 flex justify-end space-x-4">
               <button
                 type="button"
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                onClick={() => navigate(-1)}
+                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition shadow-md hover:shadow-lg"
               >
                 Save Farm Information
               </button>
@@ -247,7 +260,7 @@ const FarmInfoForm = () => {
         {/* Info Tips */}
         <div className="mt-6 bg-green-50 rounded-lg p-4 border border-green-200">
           <div className="flex items-start">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 bg-green-100 rounded-full p-1">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -255,7 +268,7 @@ const FarmInfoForm = () => {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-green-800">Why register your farm?</h3>
               <div className="mt-2 text-sm text-green-700">
-                <p>Registering your farm provides access to agricultural subsidies, technical assistance, and market opportunities. Your information is secure and will only be used for agricultural support services.</p>
+                <p>Registering your farm provides access to agricultural subsidies, technical assistance, and market opportunities. Your information is secure and will only be used for poultry management services.</p>
               </div>
             </div>
           </div>

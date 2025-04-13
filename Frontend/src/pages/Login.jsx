@@ -9,10 +9,9 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userType: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const dispatch = useDispatch();
   const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
   const navigate = useNavigate();
@@ -28,11 +27,7 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.userType === 'Farmer') {
-        navigate('/home');
-      } else if (user.userType === 'Vet') {
-        navigate('/vet-dashboard');
-      } else {
-        navigate('/home');
+        navigate('/flock-management');
       }
     }
   }, [isAuthenticated, user, navigate]);
@@ -56,7 +51,6 @@ const Login = () => {
     dispatch(loginUser({
       email: formData.email,
       password: formData.password,
-      userType: formData.userType
     }));
   };
 
@@ -66,10 +60,10 @@ const Login = () => {
       <div className="hidden md:flex w-full md:w-1/2 bg-green-50 p-8 flex-col justify-center items-center min-h-screen">
         <div className="max-w-md mx-auto text-center">
           <div className="mb-8">
-            <img 
+            <img
               src={img}
-              alt="Person with dog in cityscape" 
-              className="w-full" 
+              alt="Person with dog in cityscape"
+              className="w-full"
             />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 text-center">Raise. Manage. Thrive.</h2>
@@ -79,14 +73,14 @@ const Login = () => {
       {/* Right Section - Full width on mobile */}
       <div className="w-full min-h-screen md:w-1/2 flex flex-col items-center justify-center p-8 bg-white">
         <h1 className="text-2xl font-bold text-black mb-6">Welcome Back!</h1>
-        
+
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 border border-gray-100">
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
               {error}
             </div>
           )}
-          
+
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <input
@@ -99,7 +93,7 @@ const Login = () => {
                 required
               />
             </div>
-            
+
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -110,33 +104,16 @@ const Login = () => {
                 className="w-full p-3 rounded-md bg-green-100"
                 required
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
-            
-            <div>
-              <div className="relative w-full">
-                <select 
-                  name="userType"
-                  value={formData.userType}
-                  onChange={handleChange}
-                  className="w-full p-3 rounded-md bg-green-100 appearance-none text-gray-600"
-                >
-                  <option value="" disabled>User Type</option>
-                  <option value="Farmer">Farmer</option>
-                  <option value="Vet">Veterinarian</option>
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
-                  ▼
-                </div>
-              </div>
-            </div>
-            
+
+
             <button
               type="submit"
               disabled={loading}
@@ -145,11 +122,11 @@ const Login = () => {
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-          
+
           <div className="mt-4 text-center text-sm text-gray-500">
             <a href="#" className="hover:underline">Forgot Password?</a>
           </div>
-          
+
           <div className="mt-6 text-center text-sm text-gray-500">
             Don't have an account? <Link to="/signup" className="text-blue-500 hover:underline">Register here</Link>
           </div>

@@ -10,7 +10,7 @@ const Signup = () => {
     username: '',
     email: '',
     password: '',
-    userType: ''
+    userType: 'Farmer'
   });
   const [showPassword, setShowPassword] = useState(false);
   
@@ -29,11 +29,11 @@ const Signup = () => {
   useEffect(() => {
     if (isAuthenticated) {
       if (user?.userType === 'Farmer') {
-        navigate('/home');
+        navigate('/flock-management');
       } else if (user?.userType === 'Vet') {
         navigate('/vet-dashboard');
       } else {
-        navigate('/home');
+        navigate('/flock-management');
       }
     }
   }, [isAuthenticated, user, navigate]);
@@ -123,7 +123,7 @@ const Signup = () => {
               </button>
             </div>
             
-            <div>
+            {/* <div>
               <div className="relative w-full">
                 <select 
                   name="userType"
@@ -139,7 +139,7 @@ const Signup = () => {
                   ▼
                 </div>
               </div>
-            </div>
+            </div> */}
             
             <button
               type="submit"

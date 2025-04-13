@@ -21,7 +21,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
   if (allowedRoles && allowedRoles.length > 0) {
     if (!user || !allowedRoles.includes(user.userType)) {
       if (user && user.userType === 'Farmer') {
-        return <Navigate to="/home" replace />;
+        return <Navigate to="/flock-management" replace />;
       } else if (user && user.userType === 'Vet') {
         return <Navigate to="/vet-dashboard" replace />;
       } else {
