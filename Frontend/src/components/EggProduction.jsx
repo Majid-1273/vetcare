@@ -12,7 +12,7 @@ function EggProduction() {
   // Current page for pagination
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 6; // Assuming 6 pages for demonstration
-  
+
   // State for edit mode
   const [editingRow, setEditingRow] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -22,11 +22,11 @@ function EggProduction() {
     afternoon: 0,
     brokenEggs: 0
   });
-  
+
   // State for modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
-  
+
   // State for add new record modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRecordData, setNewRecordData] = useState({
@@ -48,24 +48,24 @@ function EggProduction() {
 
   // Toggle row selection
   const toggleRowSelection = (id) => {
-    setEggProductionData(eggProductionData.map(row => 
+    setEggProductionData(eggProductionData.map(row =>
       row.id === id ? { ...row, selected: !row.selected } : row
     ));
   };
-  
+
   // Delete row handler
   const handleDeleteClick = (id) => {
     setRowToDelete(id);
     setShowDeleteModal(true);
   };
-  
+
   // Confirm delete
   const confirmDelete = () => {
     setEggProductionData(eggProductionData.filter(row => row.id !== rowToDelete));
     setShowDeleteModal(false);
     setRowToDelete(null);
   };
-  
+
   // Edit row handler
   const handleEditClick = (row) => {
     setEditingRow(row.id);
@@ -77,7 +77,7 @@ function EggProduction() {
       brokenEggs: row.brokenEggs
     });
   };
-  
+
   // Handle edit form change
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
@@ -86,14 +86,14 @@ function EggProduction() {
       [name]: name === 'date' ? value : parseInt(value) || 0
     });
   };
-  
+
   // Save edited row
   const handleSaveClick = (id) => {
     // Calculate new values
     const totalEggs = editFormData.morning + editFormData.midmorning + editFormData.afternoon;
     // Assuming 1720 birds with 1 egg per bird per day is 100%
     const productionPercent = ((totalEggs / 1720) * 100).toFixed(1);
-    
+
     // Update the row
     setEggProductionData(eggProductionData.map(row => {
       if (row.id === id) {
@@ -110,16 +110,16 @@ function EggProduction() {
       }
       return row;
     }));
-    
+
     // Exit edit mode
     setEditingRow(null);
   };
-  
+
   // Cancel edit
   const handleCancelClick = () => {
     setEditingRow(null);
   };
-  
+
   // Handle new record form change
   const handleNewRecordChange = (e) => {
     const { name, value } = e.target;
@@ -128,13 +128,13 @@ function EggProduction() {
       [name]: name === 'date' ? value : parseInt(value) || 0
     });
   };
-  
+
   // Add new record
   const handleAddRecord = () => {
     // Calculate total eggs and production percentage
     const totalEggs = newRecordData.morning + newRecordData.midmorning + newRecordData.afternoon;
     const productionPercent = ((totalEggs / 1720) * 100).toFixed(1);
-    
+
     // Create new record
     const newRecord = {
       id: eggProductionData.length + 1, // Simple ID assignment
@@ -147,10 +147,10 @@ function EggProduction() {
       productionPercent: parseFloat(productionPercent),
       selected: false
     };
-    
+
     // Add to data
     setEggProductionData([...eggProductionData, newRecord]);
-    
+
     // Reset form and close modal
     setNewRecordData({
       date: new Date().toISOString().split('T')[0],
@@ -167,7 +167,7 @@ function EggProduction() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Daily Egg Production</h2>
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg"
           >
@@ -181,11 +181,11 @@ function EggProduction() {
             <thead>
               <tr className="bg-gray-50">
                 <th className="py-3 px-4 text-left">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={areAllSelected}
                     onChange={toggleAllRowsSelection}
-                    className="rounded border-gray-300 text-green-500 focus:ring-green-500" 
+                    className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                   />
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -202,14 +202,14 @@ function EggProduction() {
               {eggProductionData.map((row) => (
                 <tr key={row.id} className={`${row.selected ? 'bg-green-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}>
                   <td className="py-4 px-4">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={row.selected}
                       onChange={() => toggleRowSelection(row.id)}
-                      className="rounded border-gray-300 text-green-500 focus:ring-green-500" 
+                      className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                     />
                   </td>
-                  
+
                   {editingRow === row.id ? (
                     // Edit mode
                     <>
@@ -266,7 +266,7 @@ function EggProduction() {
                       </td>
                       <td className="py-2 px-4 text-right">
                         <div className="flex justify-end space-x-2">
-                          <button 
+                          <button
                             onClick={() => handleSaveClick(row.id)}
                             className="text-green-600 hover:text-green-800 focus:outline-none"
                           >
@@ -274,7 +274,7 @@ function EggProduction() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           </button>
-                          <button 
+                          <button
                             onClick={handleCancelClick}
                             className="text-red-600 hover:text-red-800 focus:outline-none"
                           >
@@ -297,7 +297,7 @@ function EggProduction() {
                       <td className="py-4 px-4 font-medium">{row.productionPercent}%</td>
                       <td className="py-4 px-4 text-right">
                         <div className="flex justify-end space-x-2">
-                          <button 
+                          <button
                             onClick={() => handleEditClick(row)}
                             className="text-gray-600 hover:text-blue-600 focus:outline-none"
                             title="Edit"
@@ -306,7 +306,7 @@ function EggProduction() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteClick(row.id)}
                             className="text-gray-600 hover:text-red-600 focus:outline-none"
                             title="Delete"
@@ -328,7 +328,7 @@ function EggProduction() {
         {/* Pagination */}
         <div className="flex justify-center mt-6">
           <nav className="flex items-center space-x-1">
-            <button 
+            <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
               disabled={currentPage === 1}
@@ -341,16 +341,15 @@ function EggProduction() {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded ${
-                  currentPage === page
+                className={`px-3 py-1 rounded ${currentPage === page
                     ? 'bg-green-600 text-white font-medium'
                     : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 {page}
               </button>
             ))}
-            <button 
+            <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
               disabled={currentPage === totalPages}
@@ -362,16 +361,6 @@ function EggProduction() {
           </nav>
         </div>
 
-        {/* Download report button */}
-        <div className="mt-6">
-          <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg">
-            Download Report
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
-        </div>
-
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -379,14 +368,14 @@ function EggProduction() {
               <h3 className="text-xl font-semibold mb-4">Confirm Delete</h3>
               <p className="mb-6 text-gray-600">Are you sure you want to delete this record? This action cannot be undone.</p>
               <div className="flex justify-end space-x-3">
-                <button 
-                  onClick={() => setShowDeleteModal(false)} 
+                <button
+                  onClick={() => setShowDeleteModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={confirmDelete} 
+                <button
+                  onClick={confirmDelete}
                   className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   Delete
@@ -395,13 +384,13 @@ function EggProduction() {
             </div>
           </div>
         )}
-        
+
         {/* Add New Record Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
               <h3 className="text-xl font-semibold mb-4">Add New Egg Production Record</h3>
-              
+
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-gray-700 mb-1">Date</label>
@@ -413,7 +402,7 @@ function EggProduction() {
                     className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-1">Morning</label>
@@ -425,7 +414,7 @@ function EggProduction() {
                       className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-gray-700 mb-1">Midmorning</label>
                     <input
@@ -437,7 +426,7 @@ function EggProduction() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-1">Afternoon</label>
@@ -449,7 +438,7 @@ function EggProduction() {
                       className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-gray-700 mb-1">Broken Eggs</label>
                     <input
@@ -461,7 +450,7 @@ function EggProduction() {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-gray-700 mb-1">Calculated Values</label>
                   <div className="bg-gray-50 p-3 rounded-md">
@@ -478,16 +467,16 @@ function EggProduction() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3">
-                <button 
-                  onClick={() => setShowAddModal(false)} 
+                <button
+                  onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleAddRecord} 
+                <button
+                  onClick={handleAddRecord}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   Add Record
