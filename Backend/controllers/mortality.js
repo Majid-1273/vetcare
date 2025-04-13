@@ -1,59 +1,71 @@
 const MortalityRecord = require('../models/MortalityRecord');
 const ChickenBatch = require('../models/ChickenBatch');
 
-// Create a new mortality record
 exports.createMortalityRecord = async (req, res) => {
   try {
-    const { batchId, date, totalBirdsCount, deadBirdsCount } = req.body;
-    
+    const { batchId, date, deadBirdsCount } = req.body;
+
     // Validate batch
     const batch = await ChickenBatch.findById(batchId);
     if (!batch) {
       return res.status(400).json({ message: 'Invalid batch ID' });
     }
-    
-    // Get the previous mortality record for the batch
-    const previousRecord = await MortalityRecord.findOne({ batchId })
-      .sort({ date: -1 });
-    
-    // Calculate remaining birds from the previous record if it's not the first entry
-    const remainingBirds = previousRecord 
-      ? previousRecord.totalBirdsCount - previousRecord.deadBirdsCount 
-      : totalBirdsCount;
 
-    // Check if it's the first entry or not
-    const actualTotalBirdsCount = previousRecord ? remainingBirds : totalBirdsCount;
+    // Check if record already exists for this date
+    const existingRecord = await MortalityRecord.findOne({
+      batchId,
+      date: new Date(date),
+    });
+
+    if (existingRecord) {
+      return res.status(400).json({
+        message: 'A mortality record already exists for this date',
+      });
+    }
+
+    // Get the last mortality record
+    const previousRecord = await MortalityRecord.findOne({ batchId }).sort({ date: -1 });
+
+    // Determine totalBirdsCount from last record, or use batch.initialCount
+    const totalBirdsCount = previousRecord
+      ? previousRecord.totalBirdsCount - previousRecord.deadBirdsCount
+      : batch.initialCount;
+
+    // Final safety check
+    if (totalBirdsCount <= 0) {
+      return res.status(400).json({ message: 'No remaining birds in this batch' });
+    }
 
     // Calculate mortality rate and cumulative loss
-    const mortalityRate = (deadBirdsCount / actualTotalBirdsCount) * 100;
-    const cumulativeLoss = previousRecord ? previousRecord.cumulativeLoss + deadBirdsCount : deadBirdsCount;
-    
-    // Create a new mortality record
+    const mortalityRate = (deadBirdsCount / totalBirdsCount) * 100;
+    const cumulativeLoss = previousRecord
+      ? previousRecord.cumulativeLoss + deadBirdsCount
+      : deadBirdsCount;
+
     const mortalityRecord = new MortalityRecord({
       batchId,
-      date,
-      totalBirdsCount: actualTotalBirdsCount,
+      date: new Date(date),
+      totalBirdsCount,
       deadBirdsCount,
       mortalityRate,
       cumulativeLoss,
-      createdBy: req.userId
+      createdBy: req.userId,
     });
-    
+
     await mortalityRecord.save();
-    
-    // Update batch current count
-    batch.currentCount = actualTotalBirdsCount - deadBirdsCount;
-    await batch.save();
-    
+
     res.status(201).json({
       message: 'Mortality record created successfully',
-      mortalityRecord
+      mortalityRecord,
     });
+
   } catch (error) {
     console.error('Create mortality record error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
 
 // Get all mortality records for a batch
 exports.getMortalityRecordsByBatch = async (req, res) => {

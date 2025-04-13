@@ -182,33 +182,24 @@ useEffect(() => {
       [name]: name === 'date' ? value : parseInt(value) || 0
     });
   };
-
+  
 // Add new record via API
 const handleAddRecord = async () => {
   try {
-    // Prepare data for API
+    // Prepare data for API - simplified to just send what's needed
     const recordToAdd = {
       batchId: batchId,
       date: newRecordData.date,
       deadBirdsCount: newRecordData.deadBirdsCount
     };
     
-    // Only include totalBirdsCount if it's the first record
-    if (mortalityData.length === 0) {
-      recordToAdd.totalBirdsCount = newRecordData.totalBirdsCount;
-    }
-    
-    console.log("Sending to API:", recordToAdd); // Debug log
-    
     // Send to API
     const response = await axios.post('http://localhost:5000/api/mortality', recordToAdd);
-    console.log("API Response:", response.data); // Debug log
     
-    // After successful API call, refresh the entire data from the API
+    // After successful API call, refresh the data
     const refreshResponse = await axios.get(`http://localhost:5000/api/mortality/batch/${batchId}`);
-    console.log("Refreshed data:", refreshResponse.data);
     
-    // Transform API data to match our component's format
+    // Format data as before
     const formattedData = refreshResponse.data.map(item => ({
       id: item._id,
       batchId: item.batchId,
@@ -218,34 +209,26 @@ const handleAddRecord = async () => {
       mortalityPercent: item.mortalityRate,
       cumulativeLoss: item.cumulativeLoss,
       selected: false,
-      // Keep original data for reference
       originalData: item
     }));
     
-    // Ensure data is sorted by date
+    // Sort by date
     formattedData.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     setMortalityData(formattedData);
-    
-    // Reset form and close modal
+    setShowAddModal(false);
     setNewRecordData({
       batchId: batchId,
       date: new Date().toISOString().split('T')[0],
-      totalBirdsCount: 0,
       deadBirdsCount: 0
     });
-    setShowAddModal(false);
-    setError(null); // Clear any previous errors
+    setError(null);
   } catch (err) {
     console.error("Error adding record:", err);
-    // More detailed error info for debugging
-    if (err.response) {
-      console.error("Response error data:", err.response.data);
-      console.error("Response error status:", err.response.status);
-    }
-    setError("Failed to add record. Please try again.");
+    setError(`Failed to add record: ${err.response?.data?.message || 'Please try again.'}`);
   }
-};
+}
+
   // Handle API errors
   if (error) {
     return (
@@ -492,114 +475,91 @@ const handleAddRecord = async () => {
           </div>
         )}
 
-        {/* Add New Record Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-              <h3 className="text-xl font-semibold mb-4">Add New Mortality Record</h3>
+{/* Add New Record Modal */}
+{showAddModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+      <h3 className="text-xl font-semibold mb-4">Add New Mortality Record</h3>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={newRecordData.date}
-                    onChange={handleNewRecordChange}
-                    className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
+      <div className="space-y-4 mb-6">
+        <div>
+          <label className="block text-gray-700 mb-1">Date</label>
+          <input
+            type="date"
+            name="date"
+            value={newRecordData.date}
+            onChange={handleNewRecordChange}
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {mortalityData.length === 0 && (
-                    <div>
-                      <label className="block text-gray-700 mb-1">Total Birds</label>
-                      <input
-                        type="number"
-                        name="totalBirdsCount"
-                        value={newRecordData.totalBirdsCount}
-                        onChange={handleNewRecordChange}
-                        className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                  )}
+        <div>
+          <label className="block text-gray-700 mb-1">Deaths</label>
+          <input
+            type="number"
+            name="deadBirdsCount"
+            value={newRecordData.deadBirdsCount}
+            onChange={handleNewRecordChange}
+            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
 
-                  <div className={mortalityData.length === 0 ? "" : "col-span-2"}>
-                    <label className="block text-gray-700 mb-1">Deaths</label>
-                    <input
-                      type="number"
-                      name="deadBirdsCount"
-                      value={newRecordData.deadBirdsCount}
-                      onChange={handleNewRecordChange}
-                      className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
-                </div>
-
-                {mortalityData.length > 0 && (
-                  <div className="bg-gray-50 p-3 rounded-md">
-                    <div className="text-sm text-gray-600 mb-2">
-                      Total birds count will be calculated automatically based on previous records.
-                    </div>
-                    <div className="font-medium">
-                      Current total birds: {mortalityData.length > 0 ? 
-                        mortalityData[mortalityData.length - 1].totalBirds - 
-                        (mortalityData[mortalityData.length - 1].deaths || 0) : 0}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-gray-700 mb-1">Calculated Values</label>
-                  <div className="bg-gray-50 p-3 rounded-md">
-                    {newRecordData.totalBirdsCount > 0 && mortalityData.length === 0 && (
-                      <div className="flex justify-between mb-1">
-                        <span className="text-gray-600">Mortality Rate:</span>
-                        <span className="font-medium">
-                          {(newRecordData.deadBirdsCount / newRecordData.totalBirdsCount * 100).toFixed(2)}%
-                        </span>
-                      </div>
-                    )}
-                    {mortalityData.length > 0 && (
-                      <div className="flex justify-between mb-1">
-                        <span className="text-gray-600">Mortality Rate:</span>
-                        <span className="font-medium">
-                          {(newRecordData.deadBirdsCount / 
-                            (mortalityData[mortalityData.length - 1].totalBirds - 
-                             mortalityData[mortalityData.length - 1].deaths) * 100).toFixed(2)}%
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Cumulative Loss:</span>
-                      <span className="font-medium">
-                        {mortalityData.length > 0
-                          ? mortalityData[mortalityData.length - 1].cumulativeLoss + newRecordData.deadBirdsCount
-                          : newRecordData.deadBirdsCount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddRecord}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  disabled={mortalityData.length === 0 ? !newRecordData.totalBirdsCount || !newRecordData.deadBirdsCount : !newRecordData.deadBirdsCount}
-                >
-                  Add Record
-                </button>
-              </div>
+        {mortalityData.length > 0 && (
+          <div className="bg-gray-50 p-3 rounded-md">
+            <div className="text-sm text-gray-600 mb-2">
+              Total birds count will be calculated automatically based on previous records.
+            </div>
+            <div className="font-medium">
+              Current total birds: {mortalityData.length > 0 ? 
+                mortalityData[mortalityData.length - 1].totalBirds - 
+                mortalityData[mortalityData.length - 1].deaths : 0}
             </div>
           </div>
         )}
+
+        <div>
+          <label className="block text-gray-700 mb-1">Calculated Values</label>
+          <div className="bg-gray-50 p-3 rounded-md">
+            {mortalityData.length > 0 && (
+              <div className="flex justify-between mb-1">
+                <span className="text-gray-600">Mortality Rate:</span>
+                <span className="font-medium">
+                  {(newRecordData.deadBirdsCount / 
+                    (mortalityData[mortalityData.length - 1].totalBirds - 
+                     mortalityData[mortalityData.length - 1].deaths) * 100).toFixed(2)}%
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Cumulative Loss:</span>
+              <span className="font-medium">
+                {mortalityData.length > 0
+                  ? mortalityData[mortalityData.length - 1].cumulativeLoss + newRecordData.deadBirdsCount
+                  : newRecordData.deadBirdsCount}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={() => setShowAddModal(false)}
+          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleAddRecord}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          disabled={!newRecordData.deadBirdsCount}
+        >
+          Add Record
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
