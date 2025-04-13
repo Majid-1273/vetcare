@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function DailyMortalityTracking() {
-  // Sample mortality data
-  const [mortalityData, setMortalityData] = useState([
-    { id: 1, date: '2025-04-01', totalBirds: 1500, deaths: 3, mortalityPercent: 0.2, cumulativeLoss: 3, selected: true },
-    { id: 2, date: '2025-04-02', totalBirds: 1497, deaths: 2, mortalityPercent: 0.13, cumulativeLoss: 5, selected: true },
-    { id: 3, date: '2025-04-03', totalBirds: 1495, deaths: 0, mortalityPercent: 0, cumulativeLoss: 5, selected: false },
-    { id: 4, date: '2025-04-04', totalBirds: 1495, deaths: 1, mortalityPercent: 0.07, cumulativeLoss: 6, selected: false }
-  ]);
+  const [mortalityData, setMortalityData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+const location = window.location.pathname;
+const batchId = location.split('/').pop();
 
   // Current page for pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 6; // Assuming 6 pages for demonstration
+  const recordsPerPage = 10;
 
   // State for edit mode
   const [editingRow, setEditingRow] = useState(null);
   const [editFormData, setEditFormData] = useState({
     date: '',
-    totalBirds: 0,
-    deaths: 0
+    totalBirdsCount: 0,
+    deadBirdsCount: 0
   });
 
   // State for modal
@@ -28,18 +28,66 @@ function DailyMortalityTracking() {
   // State for add new record modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRecordData, setNewRecordData] = useState({
+    batchId: batchId,
     date: new Date().toISOString().split('T')[0],
-    totalBirds: 0,
-    deaths: 0
+    totalBirdsCount: 0,
+    deadBirdsCount: 0
   });
+  
+// Fetch mortality data from API
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`http://localhost:5000/api/mortality/batch/${batchId}`);
+      
+      // Transform API data to match our component's format
+      const formattedData = response.data.map(item => ({
+        id: item._id,
+        batchId: item.batchId,
+        date: new Date(item.date).toISOString().split('T')[0],
+        totalBirds: item.totalBirdsCount,
+        deaths: item.deadBirdsCount,
+        mortalityPercent: item.mortalityRate,
+        cumulativeLoss: item.cumulativeLoss,
+        selected: false,
+        // Keep original data for reference
+        originalData: item
+      }));
+      
+      // Ensure data is sorted by date
+      formattedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      setMortalityData(formattedData);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching mortality data:", err);
+      setError("Failed to load mortality data. Please try again later.");
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [batchId]);
+
+  // Get current records for pagination
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = mortalityData.slice(indexOfFirstRecord, indexOfLastRecord);
+  const totalPages = Math.ceil(mortalityData.length / recordsPerPage);
 
   // Check if all rows are selected
-  const areAllSelected = mortalityData.every(row => row.selected);
+  const areAllSelected = currentRecords.length > 0 && currentRecords.every(row => row.selected);
 
   // Toggle all row selections
   const toggleAllRowsSelection = () => {
     const newSelectState = !areAllSelected;
-    setMortalityData(mortalityData.map(row => ({ ...row, selected: newSelectState })));
+    setMortalityData(mortalityData.map((row, index) => {
+      if (index >= indexOfFirstRecord && index < indexOfLastRecord) {
+        return { ...row, selected: newSelectState };
+      }
+      return row;
+    }));
   };
 
   // Toggle row selection
@@ -55,11 +103,20 @@ function DailyMortalityTracking() {
     setShowDeleteModal(true);
   };
 
-  // Confirm delete
-  const confirmDelete = () => {
-    setMortalityData(mortalityData.filter(row => row.id !== rowToDelete));
-    setShowDeleteModal(false);
-    setRowToDelete(null);
+  // Confirm delete - in a real app, you would call an API to delete the record
+  const confirmDelete = async () => {
+    try {
+      // Here you would typically make a DELETE API call
+      // await axios.delete(`http://localhost:5000/api/mortality/${rowToDelete}`);
+      
+      // For now, just remove from local state
+      setMortalityData(mortalityData.filter(row => row.id !== rowToDelete));
+      setShowDeleteModal(false);
+      setRowToDelete(null);
+    } catch (err) {
+      console.error("Error deleting record:", err);
+      setError("Failed to delete record. Please try again.");
+    }
   };
 
   // Edit row handler
@@ -67,8 +124,8 @@ function DailyMortalityTracking() {
     setEditingRow(row.id);
     setEditFormData({
       date: row.date,
-      totalBirds: row.totalBirds,
-      deaths: row.deaths
+      totalBirdsCount: row.totalBirds,
+      deadBirdsCount: row.deaths
     });
   };
 
@@ -81,35 +138,35 @@ function DailyMortalityTracking() {
     });
   };
 
-  // Save edited row
-  const handleSaveClick = (id) => {
-    // Calculate new values
-    const mortalityPercent = (editFormData.deaths / editFormData.totalBirds * 100).toFixed(2);
-
-    // Find previous cumulative loss to calculate new one
-    const currentRowIndex = mortalityData.findIndex(row => row.id === id);
-    const previousCumulativeLoss = currentRowIndex > 0 ?
-      mortalityData[currentRowIndex - 1].cumulativeLoss : 0;
-
-    const newCumulativeLoss = previousCumulativeLoss + editFormData.deaths;
-
-    // Update the row
-    setMortalityData(mortalityData.map(row => {
-      if (row.id === id) {
-        return {
-          ...row,
-          date: editFormData.date,
-          totalBirds: editFormData.totalBirds,
-          deaths: editFormData.deaths,
-          mortalityPercent: mortalityPercent,
-          cumulativeLoss: newCumulativeLoss
-        };
-      }
-      return row;
-    }));
-
-    // Exit edit mode
-    setEditingRow(null);
+  // Save edited row - in a real app, you would call an API to update the record
+  const handleSaveClick = async (id) => {
+    try {
+      // Here you would typically make a PUT/PATCH API call
+      // Update would usually be handled by the backend
+      
+      // For now, just update in local state
+      const mortalityPercent = (editFormData.deadBirdsCount / editFormData.totalBirdsCount * 100);
+      
+      // Find the row and its index
+      const rowIndex = mortalityData.findIndex(row => row.id === id);
+      
+      // Update local state
+      const updatedData = [...mortalityData];
+      updatedData[rowIndex] = {
+        ...updatedData[rowIndex],
+        date: editFormData.date,
+        totalBirds: editFormData.totalBirdsCount,
+        deaths: editFormData.deadBirdsCount,
+        mortalityPercent: mortalityPercent
+        // Note: cumulativeLoss would typically be recalculated by the backend
+      };
+      
+      setMortalityData(updatedData);
+      setEditingRow(null);
+    } catch (err) {
+      console.error("Error updating record:", err);
+      setError("Failed to update record. Please try again.");
+    }
   };
 
   // Cancel edit
@@ -126,38 +183,105 @@ function DailyMortalityTracking() {
     });
   };
 
-  // Add new record
-  const handleAddRecord = () => {
-    // Calculate mortality percent
-    const mortalityPercent = (newRecordData.deaths / newRecordData.totalBirds * 100).toFixed(2);
-
-    // Calculate cumulative loss
-    const lastRecord = mortalityData.length > 0 ?
-      mortalityData[mortalityData.length - 1] : { cumulativeLoss: 0 };
-    const newCumulativeLoss = lastRecord.cumulativeLoss + newRecordData.deaths;
-
-    // Create new record
-    const newRecord = {
-      id: mortalityData.length > 0 ? Math.max(...mortalityData.map(row => row.id)) + 1 : 1,
+// Add new record via API
+const handleAddRecord = async () => {
+  try {
+    // Prepare data for API
+    const recordToAdd = {
+      batchId: batchId,
       date: newRecordData.date,
-      totalBirds: newRecordData.totalBirds,
-      deaths: newRecordData.deaths,
-      mortalityPercent: mortalityPercent,
-      cumulativeLoss: newCumulativeLoss,
-      selected: false
+      deadBirdsCount: newRecordData.deadBirdsCount
     };
-
-    // Add to records
-    setMortalityData([...mortalityData, newRecord]);
-
+    
+    // Only include totalBirdsCount if it's the first record
+    if (mortalityData.length === 0) {
+      recordToAdd.totalBirdsCount = newRecordData.totalBirdsCount;
+    }
+    
+    console.log("Sending to API:", recordToAdd); // Debug log
+    
+    // Send to API
+    const response = await axios.post('http://localhost:5000/api/mortality', recordToAdd);
+    console.log("API Response:", response.data); // Debug log
+    
+    // After successful API call, refresh the entire data from the API
+    const refreshResponse = await axios.get(`http://localhost:5000/api/mortality/batch/${batchId}`);
+    console.log("Refreshed data:", refreshResponse.data);
+    
+    // Transform API data to match our component's format
+    const formattedData = refreshResponse.data.map(item => ({
+      id: item._id,
+      batchId: item.batchId,
+      date: new Date(item.date).toISOString().split('T')[0],
+      totalBirds: item.totalBirdsCount,
+      deaths: item.deadBirdsCount,
+      mortalityPercent: item.mortalityRate,
+      cumulativeLoss: item.cumulativeLoss,
+      selected: false,
+      // Keep original data for reference
+      originalData: item
+    }));
+    
+    // Ensure data is sorted by date
+    formattedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    setMortalityData(formattedData);
+    
     // Reset form and close modal
     setNewRecordData({
+      batchId: batchId,
       date: new Date().toISOString().split('T')[0],
-      totalBirds: 0,
-      deaths: 0
+      totalBirdsCount: 0,
+      deadBirdsCount: 0
     });
     setShowAddModal(false);
-  };
+    setError(null); // Clear any previous errors
+  } catch (err) {
+    console.error("Error adding record:", err);
+    // More detailed error info for debugging
+    if (err.response) {
+      console.error("Response error data:", err.response.data);
+      console.error("Response error status:", err.response.status);
+    }
+    setError("Failed to add record. Please try again.");
+  }
+};
+  // Handle API errors
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline"> {error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            >
+              <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <title>Close</title>
+                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading mortality data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50">
@@ -194,145 +318,155 @@ function DailyMortalityTracking() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {mortalityData.map((row) => (
-                <tr key={row.id} className={`${row.selected ? 'bg-green-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}>
-                  <td className="py-4 px-4">
-                    <input
-                      type="checkbox"
-                      checked={row.selected}
-                      onChange={() => toggleRowSelection(row.id)}
-                      className="rounded border-gray-300 text-green-500 focus:ring-green-500"
-                    />
-                  </td>
+              {currentRecords.length > 0 ? (
+                currentRecords.map((row) => (
+                  <tr key={row.id} className={`${row.selected ? 'bg-green-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}>
+                    <td className="py-4 px-4">
+                      <input
+                        type="checkbox"
+                        checked={row.selected}
+                        onChange={() => toggleRowSelection(row.id)}
+                        className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                      />
+                    </td>
 
-                  {editingRow === row.id ? (
-                    // Edit mode
-                    <>
-                      <td className="py-2 px-4">
-                        <input
-                          type="date"
-                          name="date"
-                          value={editFormData.date}
-                          onChange={handleEditFormChange}
-                          className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </td>
-                      <td className="py-2 px-4">
-                        <input
-                          type="number"
-                          name="totalBirds"
-                          value={editFormData.totalBirds}
-                          onChange={handleEditFormChange}
-                          className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </td>
-                      <td className="py-2 px-4">
-                        <input
-                          type="number"
-                          name="deaths"
-                          value={editFormData.deaths}
-                          onChange={handleEditFormChange}
-                          className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                        />
-                      </td>
-                      <td className="py-2 px-4 font-medium">
-                        {(editFormData.deaths / editFormData.totalBirds * 100).toFixed(2)}%
-                      </td>
-                      <td className="py-2 px-4">{row.cumulativeLoss}</td>
-                      <td className="py-2 px-4 text-right">
-                        <div className="flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleSaveClick(row.id)}
-                            className="text-green-600 hover:text-green-800 focus:outline-none"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={handleCancelClick}
-                            className="text-red-600 hover:text-red-800 focus:outline-none"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    // View mode
-                    <>
-                      <td className="py-4 px-4 font-medium">{row.date}</td>
-                      <td className="py-4 px-4">{row.totalBirds}</td>
-                      <td className="py-4 px-4 text-red-600">{row.deaths}</td>
-                      <td className="py-4 px-4 font-medium">{row.mortalityPercent}%</td>
-                      <td className="py-4 px-4">{row.cumulativeLoss}</td>
-                      <td className="py-4 px-4 text-right">
-                        <div className="flex justify-end space-x-2">
-                          <button
-                            onClick={() => handleEditClick(row)}
-                            className="text-gray-600 hover:text-blue-600 focus:outline-none"
-                            title="Edit"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(row.id)}
-                            className="text-gray-600 hover:text-red-600 focus:outline-none"
-                            title="Delete"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  )}
+                    {editingRow === row.id ? (
+                      // Edit mode
+                      <>
+                        <td className="py-2 px-4">
+                          <input
+                            type="date"
+                            name="date"
+                            value={editFormData.date}
+                            onChange={handleEditFormChange}
+                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                        </td>
+                        <td className="py-2 px-4">
+                          <input
+                            type="number"
+                            name="totalBirdsCount"
+                            value={editFormData.totalBirdsCount}
+                            onChange={handleEditFormChange}
+                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                        </td>
+                        <td className="py-2 px-4">
+                          <input
+                            type="number"
+                            name="deadBirdsCount"
+                            value={editFormData.deadBirdsCount}
+                            onChange={handleEditFormChange}
+                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                        </td>
+                        <td className="py-2 px-4 font-medium">
+                          {(editFormData.deadBirdsCount / editFormData.totalBirdsCount * 100).toFixed(2)}%
+                        </td>
+                        <td className="py-2 px-4">{row.cumulativeLoss}</td>
+                        <td className="py-2 px-4 text-right">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleSaveClick(row.id)}
+                              className="text-green-600 hover:text-green-800 focus:outline-none"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={handleCancelClick}
+                              className="text-red-600 hover:text-red-800 focus:outline-none"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      // View mode
+                      <>
+                        <td className="py-4 px-4 font-medium">{row.date}</td>
+                        <td className="py-4 px-4">{row.totalBirds}</td>
+                        <td className="py-4 px-4 text-red-600">{row.deaths}</td>
+                        <td className="py-4 px-4 font-medium">{row.mortalityPercent.toFixed(2)}%</td>
+                        <td className="py-4 px-4">{row.cumulativeLoss}</td>
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEditClick(row)}
+                              className="text-gray-600 hover:text-blue-600 focus:outline-none"
+                              title="Edit"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(row.id)}
+                              className="text-gray-600 hover:text-red-600 focus:outline-none"
+                              title="Delete"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="py-6 text-center text-gray-500">
+                    No mortality records found. Add a record to get started.
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-center mt-6">
-          <nav className="flex items-center space-x-1">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
-              disabled={currentPage === 1}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <nav className="flex items-center space-x-1">
               <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded ${currentPage === page
-                    ? 'bg-green-600 text-white font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
+                disabled={currentPage === 1}
               >
-                {page}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
-            ))}
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
-              disabled={currentPage === totalPages}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </nav>
-        </div>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1 rounded ${currentPage === page
+                      ? 'bg-green-600 text-white font-medium'
+                      : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
+                disabled={currentPage === totalPages}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
@@ -377,37 +511,62 @@ function DailyMortalityTracking() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 mb-1">Total Birds</label>
-                    <input
-                      type="number"
-                      name="totalBirds"
-                      value={newRecordData.totalBirds}
-                      onChange={handleNewRecordChange}
-                      className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
+                  {mortalityData.length === 0 && (
+                    <div>
+                      <label className="block text-gray-700 mb-1">Total Birds</label>
+                      <input
+                        type="number"
+                        name="totalBirdsCount"
+                        value={newRecordData.totalBirdsCount}
+                        onChange={handleNewRecordChange}
+                        className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  )}
 
-                  <div>
+                  <div className={mortalityData.length === 0 ? "" : "col-span-2"}>
                     <label className="block text-gray-700 mb-1">Deaths</label>
                     <input
                       type="number"
-                      name="deaths"
-                      value={newRecordData.deaths}
+                      name="deadBirdsCount"
+                      value={newRecordData.deadBirdsCount}
                       onChange={handleNewRecordChange}
                       className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                 </div>
 
+                {mortalityData.length > 0 && (
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <div className="text-sm text-gray-600 mb-2">
+                      Total birds count will be calculated automatically based on previous records.
+                    </div>
+                    <div className="font-medium">
+                      Current total birds: {mortalityData.length > 0 ? 
+                        mortalityData[mortalityData.length - 1].totalBirds - 
+                        (mortalityData[mortalityData.length - 1].deaths || 0) : 0}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-gray-700 mb-1">Calculated Values</label>
                   <div className="bg-gray-50 p-3 rounded-md">
-                    {newRecordData.totalBirds > 0 && (
+                    {newRecordData.totalBirdsCount > 0 && mortalityData.length === 0 && (
                       <div className="flex justify-between mb-1">
                         <span className="text-gray-600">Mortality Rate:</span>
                         <span className="font-medium">
-                          {(newRecordData.deaths / newRecordData.totalBirds * 100).toFixed(2)}%
+                          {(newRecordData.deadBirdsCount / newRecordData.totalBirdsCount * 100).toFixed(2)}%
+                        </span>
+                      </div>
+                    )}
+                    {mortalityData.length > 0 && (
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-600">Mortality Rate:</span>
+                        <span className="font-medium">
+                          {(newRecordData.deadBirdsCount / 
+                            (mortalityData[mortalityData.length - 1].totalBirds - 
+                             mortalityData[mortalityData.length - 1].deaths) * 100).toFixed(2)}%
                         </span>
                       </div>
                     )}
@@ -415,8 +574,8 @@ function DailyMortalityTracking() {
                       <span className="text-gray-600">Cumulative Loss:</span>
                       <span className="font-medium">
                         {mortalityData.length > 0
-                          ? mortalityData[mortalityData.length - 1].cumulativeLoss + newRecordData.deaths
-                          : newRecordData.deaths}
+                          ? mortalityData[mortalityData.length - 1].cumulativeLoss + newRecordData.deadBirdsCount
+                          : newRecordData.deadBirdsCount}
                       </span>
                     </div>
                   </div>
@@ -433,6 +592,7 @@ function DailyMortalityTracking() {
                 <button
                   onClick={handleAddRecord}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  disabled={mortalityData.length === 0 ? !newRecordData.totalBirdsCount || !newRecordData.deadBirdsCount : !newRecordData.deadBirdsCount}
                 >
                   Add Record
                 </button>

@@ -1,43 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import axios from 'axios';
 
 const FlockManagement = () => {
     const navigate = useNavigate();
-    const [flocks, setFlocks] = useState([
-        {
-            id: "BATCH-001",
-            name: "Spring Layers 2025",
-            breed: "ISA Brown",
-            placementDate: "2025-03-12",
-            initialCount: 1000,
-            mortalityRecords: [
-                { date: "2025-03-13", count: 2, notes: "Weak chicks" },
-                { date: "2025-03-14", count: 1, notes: "Unknown cause" },
-            ],
-            status: "active"
-        },
-        {
-            id: "BATCH-002",
-            name: "Broilers March 2025",
-            breed: "Cobb 500",
-            placementDate: "2025-03-01",
-            initialCount: 500,
-            mortalityRecords: [
-                { date: "2025-03-02", count: 1, notes: "Transportation stress" },
-                { date: "2025-03-05", count: 2, notes: "Heat stress" },
-            ],
-            status: "active"
-        }
-    ]);
-
+    const [flocks, setFlocks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [expandedFlockId, setExpandedFlockId] = useState(null);
     const [showNewFlockForm, setShowNewFlockForm] = useState(false);
+    
+    const { token } = useSelector((state) => state.auth);
+    
     const [newFlock, setNewFlock] = useState({
         name: "",
         breed: "",
+        breedType: "layer",
         placementDate: "",
         initialCount: "",
-        mortalityRecords: []
     });
 
     // Available breed options
@@ -45,84 +26,178 @@ const FlockManagement = () => {
         { value: "ISA Brown", category: "Layer" },
         { value: "Hyline", category: "Layer" },
         { value: "Lohmann Brown", category: "Layer" },
+        { value: "Rhode Island Red", category: "Layer" },
         { value: "Cobb 500", category: "Broiler" },
         { value: "Ross 308", category: "Broiler" },
         { value: "Arbor Acres", category: "Broiler" }
     ];
 
+    const fetchFlocks = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get('http://localhost:5000/api/chickens/batches', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+
+            });
+            setFlocks(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching flock data:', err);
+            setError('Failed to fetch batches. Please try again later.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFlocks();
+
+        if (token) {
+            fetchFlocks();
+        } else {
+            setError('Authentication token not found. Please log in again.');
+            setLoading(false);
+        }
+    }, [token]);
+
     // Handler for adding a new flock
-    const handleAddFlock = (e) => {
-        e.preventDefault();
-        const flockId = `BATCH-${String(flocks.length + 1).padStart(3, '0')}`;
+// Handler for adding a new flock
+const handleAddFlock = async (e) => {
+    e.preventDefault();
+    
+    try {
+        // First, create the new flock
+        const response = await axios.post(
+            'http://localhost:5000/api/chickens/batches', 
+            newFlock,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
 
-        setFlocks([...flocks, {
-            ...newFlock,
-            id: flockId,
-            status: "active",
-            mortalityRecords: []
-        }]);
+        // Format the date for the mortality record
+        const isoDate = response.data.batch.placementDate;
+        const formattedDate = new Date(isoDate).toISOString().split('T')[0];
 
+        // Then create the initial mortality record
+        await axios.post(
+            'http://localhost:5000/api/mortality',
+            {
+                batchId: response.data.batch._id,
+                date: formattedDate,
+                totalBirdsCount: response.data.batch.initialCount,
+                deadBirdsCount: 0
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        // Update state and reset form
+        setFlocks([...flocks, response.data.batch]);
         setNewFlock({
             name: "",
             breed: "",
+            breedType: "layer",
             placementDate: "",
             initialCount: "",
-            mortalityRecords: []
         });
-
+        
         setShowNewFlockForm(false);
+        fetchFlocks(); // Refresh the list to include the new flock
+    } catch (err) {
+        console.error('Error adding new flock:', err);
+        alert('Failed to add new batch. Please try again.');
+    }
+};
+
+    // Handler for changing breed type
+    const handleBreedChange = (e) => {
+        const selectedBreed = e.target.value;
+        const selectedBreedType = breedOptions.find(breed => breed.value === selectedBreed)?.category.toLowerCase() || "layer";
+        
+        setNewFlock({
+            ...newFlock,
+            breed: selectedBreed,
+            breedType: selectedBreedType
+        });
     };
 
-
-
     // Handler for removing a flock
-    const handleRemoveFlock = (e, flockId) => {
+    const handleRemoveFlock = async (e, flockId) => {
         e.stopPropagation(); // Prevent the click from triggering the navigation
         if (window.confirm("Are you sure you want to remove this batch?")) {
-            setFlocks(flocks.filter(flock => flock.id !== flockId));
-            if (expandedFlockId === flockId) {
-                setExpandedFlockId(null);
+            try {
+                await axios.delete(`http://localhost:5000/api/chickens/batches/${flockId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                setFlocks(flocks.filter(flock => flock._id !== flockId));
+                if (expandedFlockId === flockId) {
+                    setExpandedFlockId(null);
+                }
+            } catch (err) {
+                console.error('Error removing flock:', err);
+                alert('Failed to remove batch. Please try again.');
             }
         }
     };
 
     // Handler for navigating to detail page based on flock type
     const navigateToFlockDetails = (flock) => {
-        const isLayer = ["ISA Brown", "Hyline", "Lohmann Brown"].includes(flock.breed);
-        const route = isLayer ? `/layer/${flock.id}` : `/broiler/${flock.id}`;
+        const isLayer = flock.breedType === "layer";
+        const route = isLayer ? `/layer/${flock._id}` : `/broiler/${flock._id}`;
         navigate(route);
-    };
-
-    // Calculate current count (initial - mortality)
-    const calculateCurrentCount = (flock) => {
-        const totalMortality = flock.mortalityRecords.reduce((sum, record) => sum + parseInt(record.count || 0), 0);
-        return flock.initialCount - totalMortality;
     };
 
     // Calculate mortality rate
     const calculateMortalityRate = (flock) => {
-        const totalMortality = flock.mortalityRecords.reduce((sum, record) => sum + parseInt(record.count || 0), 0);
-        return ((totalMortality / flock.initialCount) * 100).toFixed(2);
+        if (!flock.initialCount) return "0.00";
+        const mortalityCount = flock.initialCount - (flock.currentCount || flock.initialCount);
+        return ((mortalityCount / flock.initialCount) * 100).toFixed(2);
     };
 
     // Calculate age in days
     const calculateAge = (placementDate) => {
-        return Math.floor((new Date() - new Date(placementDate)) / (1000 * 60 * 60 * 24));
+        const today = new Date();
+        const placement = new Date(placementDate);
+        
+        // If placement date is in the future, return 0 days
+        if (placement > today) {
+            return 0;
+        }
+        
+        // Otherwise calculate the difference in days
+        return Math.floor((today - placement) / (1000 * 60 * 60 * 24));
     };
 
     // Function to get gradient color based on flock type
-    const getFlockTypeColor = (breed) => {
-        const layerBreeds = ["ISA Brown", "Hyline", "Lohmann Brown"];
-        return layerBreeds.includes(breed)
+    const getFlockTypeColor = (breedType) => {
+        return breedType === "layer"
             ? "from-amber-500 to-amber-400"  // Layer type
             : "from-blue-500 to-blue-400";   // Broiler type
     };
 
-    // Function to determine if a flock is a layer
-    const isLayerFlock = (breed) => {
-        const layerBreeds = ["ISA Brown", "Hyline", "Lohmann Brown"];
-        return layerBreeds.includes(breed);
-    };
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 md:p-6 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading batches...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 md:p-6">
@@ -143,6 +218,22 @@ const FlockManagement = () => {
                         Add New Batch
                     </button>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-red-700">{error}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* New Flock Form */}
                 {showNewFlockForm && (
@@ -174,7 +265,7 @@ const FlockManagement = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Breed</label>
                                 <select
                                     value={newFlock.breed}
-                                    onChange={(e) => setNewFlock({ ...newFlock, breed: e.target.value })}
+                                    onChange={handleBreedChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 >
@@ -246,14 +337,13 @@ const FlockManagement = () => {
                     <div className="space-y-6">
                         {flocks.map(flock => (
                             <div
-                                key={flock.id}
-                                className={`bg-white rounded-xl shadow-md overflow-hidden transform transition hover:-translate-y-1 hover:shadow-lg border-l-4 ${isLayerFlock(flock.breed) ? "border-amber-500" : "border-blue-500"
-                                    }`}
+                                key={flock._id}
+                                className={`bg-white rounded-xl shadow-md overflow-hidden transform transition hover:-translate-y-1 hover:shadow-lg border-l-4 ${flock.breedType === "layer" ? "border-amber-500" : "border-blue-500"}`}
                             >
                                 {/* Flock Card */}
                                 <div className="relative">
                                     {/* Colored accent at the top of the card */}
-                                    <div className={`h-2 bg-gradient-to-r ${getFlockTypeColor(flock.breed)} w-full absolute top-0`}></div>
+                                    <div className={`h-2 bg-gradient-to-r ${getFlockTypeColor(flock.breedType)} w-full absolute top-0`}></div>
 
                                     {/* Card Content */}
                                     <div
@@ -266,22 +356,21 @@ const FlockManagement = () => {
                                                 <div>
                                                     <div className="flex items-center">
                                                         <h3 className="font-bold text-lg text-gray-900">{flock.name}</h3>
-                                                        <span className={`ml-2 px-2 py-0.5 text-xs ${flock.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                                            } rounded-full font-medium`}>
-                                                            {flock.status === 'active' ? 'Active' : 'Completed'}
+                                                        <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full font-medium">
+                                                            Active
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-500 mt-1">ID: {flock.id}</p>
+                                                    <p className="text-sm text-gray-500 mt-1">ID: {flock._id}</p>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <span className={`inline-flex items-center justify-center rounded-full ${isLayerFlock(flock.breed)
+                                                    <span className={`inline-flex items-center justify-center rounded-full ${flock.breedType === "layer"
                                                             ? "text-amber-700 bg-amber-50"
                                                             : "text-blue-700 bg-blue-50"
                                                         } px-2 py-1 text-xs`}>
-                                                        {isLayerFlock(flock.breed) ? "Layer" : "Broiler"}
+                                                        {flock.breedType === "layer" ? "Layer" : "Broiler"}
                                                     </span>
                                                     <button
-                                                        onClick={(e) => handleRemoveFlock(e, flock.id)}
+                                                        onClick={(e) => handleRemoveFlock(e, flock._id)}
                                                         className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1 rounded-full transition-colors"
                                                         title="Remove batch"
                                                     >
@@ -302,7 +391,7 @@ const FlockManagement = () => {
                                                     <span className="text-sm font-medium">{new Date(flock.placementDate).toLocaleDateString()}</span>
                                                 </div>
                                                 <div className="bg-gray-50 rounded-lg p-3">
-                                                    <span className="text-xs font-medium text-gray-500 uppercase block">Placements</span>
+                                                    <span className="text-xs font-medium text-gray-500 uppercase block">Age</span>
                                                     <span className="text-sm font-medium">{calculateAge(flock.placementDate)} days</span>
                                                 </div>
                                             </div>
@@ -322,7 +411,7 @@ const FlockManagement = () => {
                                                 </div>
                                                 <div className="text-center p-2 bg-white rounded-lg shadow-sm">
                                                     <span className="text-xs font-medium text-gray-500 uppercase block">Current</span>
-                                                    <span className="text-lg font-bold text-gray-900">{calculateCurrentCount(flock)}</span>
+                                                    <span className="text-lg font-bold text-gray-900">{flock.currentCount || flock.initialCount}</span>
                                                 </div>
                                                 <div className="text-center p-2 bg-white rounded-lg shadow-sm">
                                                     <span className="text-xs font-medium text-gray-500 uppercase block">Mortality</span>

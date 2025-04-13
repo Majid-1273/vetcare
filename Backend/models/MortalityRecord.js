@@ -26,9 +26,6 @@ const mortalityRecordSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  notes: {
-    type: String
-  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

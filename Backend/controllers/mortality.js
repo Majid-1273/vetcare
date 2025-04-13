@@ -4,7 +4,7 @@ const ChickenBatch = require('../models/ChickenBatch');
 // Create a new mortality record
 exports.createMortalityRecord = async (req, res) => {
   try {
-    const { batchId, date, totalBirdsCount, deadBirdsCount, notes } = req.body;
+    const { batchId, date, totalBirdsCount, deadBirdsCount } = req.body;
     
     // Validate batch
     const batch = await ChickenBatch.findById(batchId);
@@ -36,7 +36,6 @@ exports.createMortalityRecord = async (req, res) => {
       deadBirdsCount,
       mortalityRate,
       cumulativeLoss,
-      notes,
       createdBy: req.userId
     });
     
@@ -100,8 +99,7 @@ exports.updateMortalityRecord = async (req, res) => {
     const { id } = req.params;
     const {
       date,
-      deadBirdsCount,
-      notes
+      deadBirdsCount
     } = req.body;
     
     const mortalityRecord = await MortalityRecord.findById(id);
@@ -158,8 +156,6 @@ exports.updateMortalityRecord = async (req, res) => {
         await record.save();
       }
     }
-    
-    if (notes !== undefined) mortalityRecord.notes = notes;
     
     await mortalityRecord.save();
     
