@@ -4,6 +4,6 @@ const farmController = require('../controllers/farmController');
 
 router.post('/createFarm',  farmController.createFarm);
 
-router.get('/:id',  farmController.getFarmById);
+router.get('/:id',  farmController.getFarmsByUserId);
 
 module.exports = router;

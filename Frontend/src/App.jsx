@@ -17,6 +17,7 @@ import LayerDetails from "./pages/LayerDetails";
 import BroilerDetails from "./pages/BroilerDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FarmInfoForm from "./pages/FarmDetails";
+import Profile from "./pages/Profile";
 
 const AuthenticatedLayout = ({ children }) => {
   return (
@@ -43,7 +44,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          
+
           {/* Protected routes using the new ProtectedRoute component */}
           <Route element={<ProtectedRoute allowedRoles={['Farmer']} />}>
             <Route path="/home" element={
@@ -51,19 +52,25 @@ function App() {
                 <Home />
               </AuthenticatedLayout>
             } />
-            
+
             <Route path="/flock-management" element={
               <AuthenticatedLayout>
                 <PoultryManagement />
               </AuthenticatedLayout>
             } />
-            
+
+            <Route path="/profile" element={
+              <AuthenticatedLayout>
+                <Profile />
+              </AuthenticatedLayout>
+            } />
+
             <Route path="/vet-locator" element={
               <AuthenticatedLayout>
                 <VetLocator />
               </AuthenticatedLayout>
             } />
-            
+
             <Route path="/reports-&-analytics" element={
               <AuthenticatedLayout>
                 <ReportsAndAnalytics />
@@ -72,7 +79,7 @@ function App() {
           </Route>
 
           <Route path="/farm-details" element={<FarmInfoForm />} />
-          
+
           {/* Routes for both Farmer and Vet */}
           <Route element={<ProtectedRoute allowedRoles={['Farmer', 'Vet']} />}>
             <Route path="/chatbot" element={
@@ -80,20 +87,20 @@ function App() {
                 <Chatbot />
               </AuthenticatedLayout>
             } />
-            
+
             <Route path="/layer/:id" element={
               <AuthenticatedLayout>
                 <LayerDetails />
               </AuthenticatedLayout>
             } />
-            
+
             <Route path="/broiler/:id" element={
               <AuthenticatedLayout>
                 <BroilerDetails />
               </AuthenticatedLayout>
             } />
           </Route>
-          
+
           {/* Default route */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

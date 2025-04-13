@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bird, MapPin, MessageSquare, User } from 'lucide-react';
+import { Home, Bird, MapPin, MessageSquare, User,GitGraph } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
   
   const navItems = [
     { 
-      path: "/home", 
-      label: "Home",
-      icon: <Home size={24} />
+      path: "/reports-&-analytics", 
+      label: "Reports & Analytics",
+      icon: <GitGraph size={24} />
     },
     { 
       path: "/flock-management", 
@@ -27,8 +27,8 @@ const Sidebar = () => {
       icon: <MessageSquare size={24} />
     },
     { 
-      path: "/reports-&-analytics", 
-      label: "Reports & Analytics",
+      path: "/profile", 
+      label: "Profile",
       icon: <User size={24} />
     }
   ];
