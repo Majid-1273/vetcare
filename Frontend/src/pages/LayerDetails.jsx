@@ -50,7 +50,7 @@ function LayerDetails() {
           
           {/* User Icon */}
           <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-sm font-medium text-green-800">
-            ES
+            VC
           </div>
         </div>
       </div>

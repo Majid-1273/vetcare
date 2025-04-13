@@ -38,7 +38,7 @@ const Sidebar = () => {
       {/* Logo Section */}
       <div className="py-6 flex justify-center">
         <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md transform transition-transform group-hover:scale-110">
-          <span className="text-white font-bold text-2xl">PM</span>
+          <span className="text-white font-bold text-xl">VCare</span>
         </div>
       </div>
       
