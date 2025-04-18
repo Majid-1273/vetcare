@@ -10,7 +10,9 @@ exports.createFeedRecord = async (req, res) => {
       ageGroup,
       feedType,
       avgConsumptionPerBird,
-      totalFeedUsed
+      totalFeedUsed,
+      day,
+      week
     } = req.body;
 
     // Validate that the batchId exists in the ChickenBatch collection
@@ -25,6 +27,8 @@ exports.createFeedRecord = async (req, res) => {
       feedType,
       avgConsumptionPerBird,
       totalFeedUsed,
+      day,
+      week,
       createdBy: req.userId  // Assuming userId is passed from middleware
     });
 
@@ -86,7 +90,9 @@ exports.updateFeedRecord = async (req, res) => {
       ageGroup, 
       feedType, 
       avgConsumptionPerBird, 
-      totalFeedUsed 
+      totalFeedUsed,
+      day,
+      week
     } = req.body;
     
     const feedRecord = await FeedRecord.findById(id);
@@ -99,7 +105,9 @@ exports.updateFeedRecord = async (req, res) => {
     if (feedType) feedRecord.feedType = feedType;
     if (avgConsumptionPerBird !== undefined) feedRecord.avgConsumptionPerBird = avgConsumptionPerBird;
     if (totalFeedUsed !== undefined) feedRecord.totalFeedUsed = totalFeedUsed;
-    
+    if (day !== undefined) feedRecord.day = day;
+    if (week !== undefined) feedRecord.week = week;
+
     await feedRecord.save();
     
     res.json({

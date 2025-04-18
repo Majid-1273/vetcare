@@ -22,6 +22,14 @@ const feedRecordSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  day: {
+    type: Number,
+    required: true
+  },
+  week: {
+    type: Number,
+    required: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -1,4 +1,3 @@
-// models/EggProduction.js
 const mongoose = require('mongoose');
 
 const eggProductionSchema = new mongoose.Schema({
@@ -10,6 +9,10 @@ const eggProductionSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: true
+  },
+  week: {
+    type: Number,
+    required: true // since it's user-provided, better to make it required
   },
   morningEggs: {
     type: Number,

@@ -11,7 +11,7 @@ export default function FeedManagement() {
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const recordsPerPage = 5;
+    const [itemsPerPage] = useState(5);
     const [editingRow, setEditingRow] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
@@ -19,20 +19,24 @@ export default function FeedManagement() {
     const { token } = useSelector((state) => state.auth);
     const batchId = id;
     
-    // State for new record
+    // State for new record - Added day and week fields
     const [newRecordData, setNewRecordData] = useState({
         ageGroup: "",
         feedType: "",
         avgConsumptionPerBird: "",
-        totalFeedUsed: ""
+        totalFeedUsed: "",
+        day: 1,
+        week: 1
     });
     
-    // State for edit form
+    // State for edit form - Added day and week fields
     const [editFormData, setEditFormData] = useState({
         ageGroup: "",
         feedType: "",
         avgConsumptionPerBird: "",
-        totalFeedUsed: ""
+        totalFeedUsed: "",
+        day: 1,
+        week: 1
     });
 
     // Available feed types
@@ -83,10 +87,10 @@ export default function FeedManagement() {
     }, [token, batchId]);
 
     // Calculate pagination
-    const indexOfLastRecord = currentPage * recordsPerPage;
-    const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-    const currentRecords = feedRecords.slice(indexOfFirstRecord, indexOfLastRecord);
-    const totalPages = Math.ceil(feedRecords.length / recordsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentRecords = feedRecords.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(feedRecords.length / itemsPerPage);
 
     // Handle adding new record
     const handleAddRecord = async () => {
@@ -112,7 +116,9 @@ export default function FeedManagement() {
                 ageGroup: "",
                 feedType: "",
                 avgConsumptionPerBird: "",
-                totalFeedUsed: ""
+                totalFeedUsed: "",
+                day: 1,
+                week: 1
             });
             setShowAddModal(false);
         } catch (err) {
@@ -128,7 +134,9 @@ export default function FeedManagement() {
             ageGroup: record.ageGroup,
             feedType: record.feedType,
             avgConsumptionPerBird: record.avgConsumptionPerBird,
-            totalFeedUsed: record.totalFeedUsed
+            totalFeedUsed: record.totalFeedUsed,
+            day: record.day || 1,
+            week: record.week || 1
         });
     };
 
@@ -137,7 +145,7 @@ export default function FeedManagement() {
         const { name, value } = e.target;
         setEditFormData({
             ...editFormData,
-            [name]: name === 'ageGroup' || name === 'feedType' ? value : value
+            [name]: value
         });
     };
 
@@ -205,238 +213,293 @@ export default function FeedManagement() {
         });
     };
 
+    // Handle download
+    const handleDownload = () => {
+        // Implement CSV download logic here
+        console.log("Download initiated");
+        alert("Download feature will be implemented soon");
+    };
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+            <div className="min-h-screen bg-white p-4 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading feed records...</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto p-4">
-            <div className="w-full">
+        <div className="h-[90vh] bg-white p-6">
+            <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-xl font-semibold">Daily Feed Consumption</h1>
+                    <h1 className="text-2xl font-bold text-gray-800">Feed Management</h1>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="bg-green-400 text-white text-sm px-4 py-2 rounded-md"
+                        className="bg-[#A8E6CF] text-white px-4 py-2 rounded-md flex items-center"
                     >
-                        + Add New Feed
+                        <span className="mr-1">+</span> Add New Feed
                     </button>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-4">
+                    <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-6 rounded-md">
                         <p className="text-red-700">{error}</p>
                     </div>
                 )}
 
                 {/* Feed Records Table */}
-                <div className="bg-white rounded-md shadow-sm mb-4">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="w-12 py-3 px-4">
-                                    <input type="checkbox" className="w-4 h-4 accent-green-500" />
-                                </th>
-                                <th className="py-3 px-4 text-left">Age Group</th>
-                                <th className="py-3 px-4 text-left">Feed Type</th>
-                                <th className="py-3 px-4 text-left">Avg. Consumption Per Bird (g)</th>
-                                <th className="py-3 px-4 text-left">Total Feed Used (kg)</th>
-                                <th className="py-3 px-4 text-right"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {currentRecords.map((record) => (
-                                <tr key={record._id} className="border-b hover:bg-gray-50">
-                                    <td className="py-3 px-4">
-                                        <input type="checkbox" className="w-4 h-4 accent-green-500" />
-                                    </td>
-                                    {editingRow === record._id ? (
-                                        // Edit mode
-                                        <>
-                                            <td className="py-2 px-4">
-                                                <select
-                                                    name="ageGroup"
-                                                    value={editFormData.ageGroup}
-                                                    onChange={handleEditFormChange}
-                                                    className="border rounded w-full py-1 px-2"
-                                                >
-                                                    {ageGroupOptions.map(group => (
-                                                        <option key={group} value={group}>{group}</option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                            <td className="py-2 px-4">
-                                                <select
-                                                    name="feedType"
-                                                    value={editFormData.feedType}
-                                                    onChange={handleEditFormChange}
-                                                    className="border rounded w-full py-1 px-2"
-                                                >
-                                                    {feedTypeOptions.map(type => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                            <td className="py-2 px-4">
-                                                <input
-                                                    type="number"
-                                                    name="avgConsumptionPerBird"
-                                                    value={editFormData.avgConsumptionPerBird}
-                                                    onChange={handleEditFormChange}
-                                                    className="border rounded w-full py-1 px-2"
+                <div className="bg-white shadow-sm border border-gray-200 rounded-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="w-12 px-4 py-3">
+                                        <input 
+                                            type="checkbox" 
+                                            className="h-4 w-4 text-green-500 border-gray-300 rounded"
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                if (feedRecords.length > 0) {
+                                                    // Implementation for select all would go here
+                                                }
+                                            }}
+                                        />
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Age Group
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Feed Type
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Avg. Consumption Per Bird (g)
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Total Feed Used (kg)
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Day
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Week
+                                    </th>
+                                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {currentRecords.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="8" className="px-4 py-4 text-center text-gray-500">
+                                            No feed records found. Add your first feed record to get started.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    currentRecords.map((record) => (
+                                        <tr key={record._id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="h-4 w-4 text-green-500 border-gray-300 rounded"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 />
                                             </td>
-                                            <td className="py-2 px-4">
-                                                <input
-                                                    type="number"
-                                                    name="totalFeedUsed"
-                                                    value={editFormData.totalFeedUsed}
-                                                    onChange={handleEditFormChange}
-                                                    className="border rounded w-full py-1 px-2"
-                                                />
-                                            </td>
-                                            <td className="py-2 px-4 text-right">
-                                                <div className="flex justify-end space-x-2">
-                                                    <button 
-                                                        onClick={() => handleSaveClick(record._id)}
-                                                        className="text-green-500"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </button>
-                                                    <button 
-                                                        onClick={handleCancelClick}
-                                                        className="text-red-500"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </>
-                                    ) : (
-                                        // View mode
-                                        <>
-                                            <td className="py-3 px-4">{record.ageGroup}</td>
-                                            <td className="py-3 px-4">{record.feedType}</td>
-                                            <td className="py-3 px-4">{record.avgConsumptionPerBird}</td>
-                                            <td className="py-3 px-4">{record.totalFeedUsed}</td>
-                                            <td className="py-3 px-4 text-right">
-    <div className="flex justify-end space-x-2">
-        {/* Edit Button */}
-        <button 
-            onClick={() => handleEditClick(record)}
-            className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
-            title="Edit"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-        </button>
-
-        {/* Delete Button */}
-        <button 
-            onClick={() => handleDeleteClick(record._id)}
-            className="text-gray-600 hover:text-red-600 transition-colors duration-200"
-            title="Delete"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-        </button>
-    </div>
-</td>
-
-                                        </>
-                                    )}
-                                </tr>
-                            ))}
-                            {/* Empty rows for consistent layout */}
-                            {Array.from({ length: Math.max(0, recordsPerPage - currentRecords.length) }).map((_, idx) => (
-                                <tr key={`empty-${idx}`} className="border-b">
-                                    <td className="py-3 px-4">
-                                        <input type="checkbox" className="w-4 h-4 accent-green-500" />
-                                    </td>
-                                    <td className="py-3 px-4"></td>
-                                    <td className="py-3 px-4"></td>
-                                    <td className="py-3 px-4"></td>
-                                    <td className="py-3 px-4"></td>
-                                    <td className="py-3 px-4 text-right">
-                                        <div className="flex justify-end space-x-2">
-                                            <button className="text-gray-300">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                            <button className="text-gray-300">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                            {editingRow === record._id ? (
+                                                // Edit mode
+                                                <>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <select
+                                                            name="ageGroup"
+                                                            value={editFormData.ageGroup}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                        >
+                                                            {ageGroupOptions.map(group => (
+                                                                <option key={group} value={group}>{group}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <select
+                                                            name="feedType"
+                                                            value={editFormData.feedType}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                        >
+                                                            {feedTypeOptions.map(type => (
+                                                                <option key={type} value={type}>{type}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <input
+                                                            type="number"
+                                                            name="avgConsumptionPerBird"
+                                                            value={editFormData.avgConsumptionPerBird}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <input
+                                                            type="number"
+                                                            name="totalFeedUsed"
+                                                            value={editFormData.totalFeedUsed}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                            min="0"
+                                                            step="0.1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <input
+                                                            type="number"
+                                                            name="day"
+                                                            value={editFormData.day}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                            min="1"
+                                                            step="1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap">
+                                                        <input
+                                                            type="number"
+                                                            name="week"
+                                                            value={editFormData.week}
+                                                            onChange={handleEditFormChange}
+                                                            className="w-full border border-gray-300 rounded-md px-3 py-2"
+                                                            min="1"
+                                                            step="1"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex justify-end space-x-2">
+                                                            <button 
+                                                                onClick={() => handleSaveClick(record._id)}
+                                                                className="text-green-500 hover:text-green-700"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </button>
+                                                            <button 
+                                                                onClick={handleCancelClick}
+                                                                className="text-red-500 hover:text-red-700"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                // View mode
+                                                <>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.ageGroup}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.feedType}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.avgConsumptionPerBird}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.totalFeedUsed}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.day || '-'}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{record.week || '-'}</td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                                        <div className="flex justify-end space-x-2">
+                                                            <button
+                                                                onClick={() => handleEditClick(record)}
+                                                                className="text-gray-600 hover:text-blue-600"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteClick(record._id)}
+                                                                className="text-red-500 hover:text-red-700"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                {/* Pagination */}
-<div className="flex justify-between items-center mt-4">
-    <button className="px-4 py-2 bg-green-400 text-white rounded-md">
-        Download CSV
-    </button>
-
-    <div className="flex-1 flex justify-center">
-        <div className="flex flex-wrap justify-center space-x-1">
-            {totalPages > 0 ? (
-                Array.from({ length: totalPages }, (_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                        <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`w-8 h-8 rounded border text-sm flex items-center justify-center 
-                                ${currentPage === pageNum ? 'border-gray-900 font-medium' : 'border-gray-300'}`}
-                        >
-                            {pageNum}
-                        </button>
-                    );
-                })
-            ) : (
-                <button className="w-8 h-8 rounded border border-gray-900 text-sm flex items-center justify-center">
-                    1
+                {/* Container for pagination and download button */}
+                <div className="mt-4 flex justify-between items-center">
+                    {/* Pagination */}
+                    <div className="flex-1 flex justify-center">
+                        {totalPages > 1 && (
+                            <div className="flex items-center">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                                    <button
+                                        key={number}
+                                        onClick={() => setCurrentPage(number)}
+                                        className={`px-3 py-1 mx-1 ${currentPage === number
+                                            ? 'bg-gray-200 text-gray-700 rounded-md text-sm border border-gray-200'
+                                            : ' hover:bg-gray-100 rounded-md text-sm '
+                                        } `}
+                                    >
+                                        {number}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Download button */}
+                <button
+                    onClick={handleDownload}
+                    className="bg-[#A8E6CF] text-white px-4 py-2 rounded-md flex items-center mt-4"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
                 </button>
-            )}
-        </div>
-    </div>
-
-    {/* empty spacer to balance layout */}
-    <div className="w-[150px]" />
-</div>
-
 
                 {/* Add New Record Modal */}
                 {showAddModal && (
                     <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                            <h3 className="text-lg font-semibold mb-4">Add New Feed Record</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Add New Feed Record</h2>
+                                <button
+                                    onClick={() => setShowAddModal(false)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                             
-                            <div className="space-y-4 mb-6">
+                            <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-gray-700 mb-1">Age Group</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Age Group</label>
                                     <select
                                         name="ageGroup"
                                         value={newRecordData.ageGroup}
                                         onChange={handleNewRecordChange}
-                                        className="w-full border rounded-md px-3 py-2"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        required
                                     >
                                         <option value="">Select age group</option>
                                         {ageGroupOptions.map(group => (
@@ -446,12 +509,13 @@ export default function FeedManagement() {
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-gray-700 mb-1">Feed Type</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Feed Type</label>
                                     <select
                                         name="feedType"
                                         value={newRecordData.feedType}
                                         onChange={handleNewRecordChange}
-                                        className="w-full border rounded-md px-3 py-2"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        required
                                     >
                                         <option value="">Select feed type</option>
                                         {feedTypeOptions.map(type => (
@@ -461,46 +525,76 @@ export default function FeedManagement() {
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-gray-700 mb-1">Avg. Consumption / Bird (g)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Avg. Consumption / Bird (g)</label>
                                     <input
                                         type="number"
                                         name="avgConsumptionPerBird"
                                         value={newRecordData.avgConsumptionPerBird}
                                         onChange={handleNewRecordChange}
-                                        className="w-full border rounded-md px-3 py-2"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter consumption per bird"
                                         min="0"
                                         step="0.1"
+                                        required
                                     />
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-gray-700 mb-1">Total Feed Used (kg)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Feed Used (kg)</label>
                                     <input
                                         type="number"
                                         name="totalFeedUsed"
                                         value={newRecordData.totalFeedUsed}
                                         onChange={handleNewRecordChange}
-                                        className="w-full border rounded-md px-3 py-2"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter total feed used"
                                         min="0"
                                         step="0.1"
+                                        required
                                     />
                                 </div>
-                            </div>
-                            
-                            <div className="flex justify-end space-x-3">
-                                <button 
-                                    onClick={() => setShowAddModal(false)} 
-                                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    onClick={handleAddRecord} 
-                                    className="px-4 py-2 bg-green-400 text-white rounded-md hover:bg-green-500"
-                                >
-                                    Add Record
-                                </button>
-                            </div>
+                                
+                                {/* New fields for day and week */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+                                    <input
+                                        type="number"
+                                        name="day"
+                                        value={newRecordData.day}
+                                        onChange={handleNewRecordChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter day"
+                                        min="1"
+                                        step="1"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Week</label>
+                                    <input
+                                        type="number"
+                                        name="week"
+                                        value={newRecordData.week}
+                                        onChange={handleNewRecordChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                        placeholder="Enter week"
+                                        min="1"
+                                        step="1"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleAddRecord}
+                                        className="bg-[#A8E6CF] text-white font-medium py-2 px-6 rounded-md"
+                                    >
+                                        Add Record
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}
