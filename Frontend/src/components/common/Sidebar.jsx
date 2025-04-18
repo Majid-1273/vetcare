@@ -1,56 +1,53 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bird, MapPin, MessageSquare, User,GitGraph } from 'lucide-react';
+import chatbot from '../../assets/images/chat.png';
+import flockManagement from '../../assets/images/flockManagement.png';
+import home from '../../assets/images/home.png';
+import reportsAnalytics from '../../assets/images/reportsAnalytics.png';
+import vetlocator from '../../assets/images/vetlocator.png';
 
 const Sidebar = () => {
   const location = useLocation();
-  
+
   const navItems = [
-    { 
-      path: "/reports-&-analytics", 
-      label: "Reports & Analytics",
-      icon: <GitGraph size={24} />
+    {
+      path: "/home",
+      label: "Home",
+      image: home
     },
-    { 
-      path: "/flock-management", 
+    {
+      path: "/flock-management",
       label: "Flock Management",
-      icon: <Bird size={24} />
+      image: flockManagement
     },
-    { 
-      path: "/vet-locator", 
-      label: "Vet Locator",
-      icon: <MapPin size={24} />
-    },
-    { 
-      path: "/chatbot", 
+    {
+      path: "/chatbot",
       label: "Chatbot",
-      icon: <MessageSquare size={24} />
+      image: chatbot
     },
-    { 
-      path: "/profile", 
-      label: "Profile",
-      icon: <User size={24} />
-    }
+    {
+      path: "/vet-locator",
+      label: "Vet Locator",
+      image: vetlocator
+    },
+    {
+      path: "/reports-&-analytics",
+      label: "Reports & Analytics",
+      image: reportsAnalytics
+    },
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-24 bg-[#DFFFE0] shadow-lg transition-all duration-300 hover:w-64 group z-50">
-      {/* Logo Section */}
-      <div className="py-6 flex justify-center">
-        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md transform transition-transform group-hover:scale-110">
-          <span className="text-white font-bold text-xl">VCare</span>
-        </div>
-      </div>
-      
+    <div className="fixed top-0 left-0 h-full w-28 bg-[#DFFFE0] shadow-lg z-50 flex items-center justify-center">
       {/* Navigation Items */}
-      <div className="flex flex-col gap-3 px-3 mt-6">
+      <div className="flex flex-col gap-4 items-center justify-center">
         {navItems.map((item) => (
-          <SidebarItem 
+          <SidebarItem
             key={item.path}
-            to={item.path} 
-            icon={item.icon} 
-            label={item.label} 
-            active={location.pathname === item.path} 
+            to={item.path}
+            image={item.image}
+            label={item.label}
+            active={location.pathname === item.path}
           />
         ))}
       </div>
@@ -58,21 +55,25 @@ const Sidebar = () => {
   );
 };
 
-// Enhanced SidebarItem Component
-const SidebarItem = ({ icon, label, active, to }) => {
+// Updated SidebarItem Component
+const SidebarItem = ({ image, label, active, to }) => {
   return (
     <Link to={to} className="w-full no-underline text-black">
-      <div className={`w-full py-3 px-4 flex items-center rounded-lg transition-all duration-200 ${
-        active 
-          ? 'bg-gradient-to-r from-green-200 to-green-100 shadow-md' 
+      <div className={`w-full py-2 flex flex-col items-center justify-center rounded-lg transition-all duration-200 ${
+        active
+          ? 'bg-gradient-to-r from-green-200 to-green-100 shadow-md'
           : 'hover:bg-green-100 hover:shadow-sm'
       }`}>
-        <div className={`w-10 h-10 flex items-center justify-center transition-colors duration-300 ${
-          active ? 'text-green-700' : 'text-green-600'
-        }`}>
-          {icon}
+        {/* Image container */}
+        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+          <img
+            src={image}
+            alt={label}
+            className="w-6 h-6 object-contain"
+          />
         </div>
-        <span className={`text-sm font-medium ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap ${
+        {/* Text below the image */}
+        <span className={`text-xs font-medium mt-1 text-center ${
           active ? 'text-green-800' : 'text-gray-700'
         }`}>
           {label}

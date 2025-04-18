@@ -101,3 +101,43 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+exports.addWorker = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    const farmerId = req.user?.id || req.body.farmerId; // Adjust this based on how you're sending farmer info
+
+    if (!farmerId) {
+      return res.status(400).json({ message: 'Farmer ID is required' });
+    }
+
+    // Check if worker email already exists
+    const existingWorker = await Worker.findOne({ email });
+    if (existingWorker) {
+      return res.status(400).json({ message: 'Email already registered for a worker' });
+    }
+
+    // Create new worker
+    const worker = new Worker({
+      username,
+      email,
+      password,
+      farmerId
+    });
+
+    await worker.save();
+
+    res.status(201).json({
+      message: 'Worker added successfully',
+      worker: {
+        id: worker._id,
+        username: worker.username,
+        email: worker.email,
+        farmerId: worker.farmerId
+      }
+    });
+  } catch (error) {
+    console.error('Add worker error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

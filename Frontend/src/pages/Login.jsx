@@ -1,5 +1,5 @@
 // src/pages/Login.js
-import img from "../assets/images/loginSignup.png";
+import img from "../assets/images/kids.png";
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
@@ -57,7 +57,7 @@ const Login = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Left Section - Hidden on mobile, visible on md and up */}
-      <div className="hidden md:flex w-full md:w-1/2 bg-green-50 p-8 flex-col justify-center items-center min-h-screen">
+      <div className="hidden md:flex w-full md:w-1/2 bg-[#DFFFE0] p-8 flex-col justify-center items-center min-h-screen">
         <div className="max-w-md mx-auto text-center">
           <div className="mb-8">
             <img
@@ -66,13 +66,14 @@ const Login = () => {
               className="w-full"
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 text-center">Raise. Manage. Thrive.</h2>
+          <h2 className="text-2xl font-bold text-gray-800 text-center">Record Smarter.<br />
+            Grow Faster.</h2>
         </div>
       </div>
 
       {/* Right Section - Full width on mobile */}
       <div className="w-full min-h-screen md:w-1/2 flex flex-col items-center justify-center p-8 bg-white">
-        <h1 className="text-2xl font-bold text-black mb-6">Welcome Back!</h1>
+        <h1 className="text-3xl font-bold text-black mb-6">Welcome Back!</h1>
 
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 border border-gray-100">
           {error && (
@@ -89,7 +90,7 @@ const Login = () => {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full p-3 rounded-md bg-green-100"
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
                 required
               />
             </div>
@@ -101,7 +102,7 @@ const Login = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-3 rounded-md bg-green-100"
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
                 required
               />
               <button
@@ -114,13 +115,15 @@ const Login = () => {
             </div>
 
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full p-3 bg-green-300 text-gray-800 rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
+            <div className="flex items-center justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className={` px-8 py-1 bg-[#A8E6CF] text-white rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+            </div>
           </form>
 
           <div className="mt-4 text-center text-sm text-gray-500">

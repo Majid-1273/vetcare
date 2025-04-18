@@ -24,7 +24,6 @@ exports.createEggProduction = async (req, res) => {
       return res.status(400).json({ message: 'Egg production records can only be added for layer or hybrid chicken types' });
     }
     
-    
     // Check if record for this date already exists
     const existingRecord = await EggProduction.findOne({
       batchId,
@@ -35,18 +34,24 @@ exports.createEggProduction = async (req, res) => {
       return res.status(400).json({ message: 'Egg production record for this date already exists' });
     }
     
-    // Calculate production percentage
-    const totalEggs = (morningEggs || 0) + (noonEggs || 0) + (eveningEggs || 0);
-    const effectiveEggs = totalEggs - (brokenEggs || 0);
+    // Ensure values are numbers with defaults of 0
+    const morning = parseInt(morningEggs) || 0;
+    const noon = parseInt(noonEggs) || 0;
+    const evening = parseInt(eveningEggs) || 0;
+    const broken = parseInt(brokenEggs) || 0;
+    
+    // Calculate production percentage correctly
+    const totalEggs = morning + noon + evening;
+    const effectiveEggs = totalEggs - broken;
     const productionPercentage = totalEggs > 0 ? (effectiveEggs / totalEggs) * 100 : 0;
     
     const eggProduction = new EggProduction({
       batchId,
       date,
-      morningEggs: morningEggs || 0,
-      noonEggs: noonEggs || 0,
-      eveningEggs: eveningEggs || 0,
-      brokenEggs: brokenEggs || 0,
+      morningEggs: morning,
+      noonEggs: noon,
+      eveningEggs: evening,
+      brokenEggs: broken,
       productionPercentage,
       createdBy: req.userId
     });
@@ -62,7 +67,6 @@ exports.createEggProduction = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 // Get all egg production records for a batch
 exports.getEggProductionByBatch = async (req, res) => {
   try {

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const mortalityRecordSchema = new mongoose.Schema({
   batchId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ChickenBatch',
+    ref: 'Batch',
     required: true
   },
   date: {

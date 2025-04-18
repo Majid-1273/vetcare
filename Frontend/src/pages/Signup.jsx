@@ -1,5 +1,5 @@
 // src/pages/Signup.js
-import img from "../assets/images/loginSignup.png";
+import img from "../assets/images/kids.png"; // Changed image import to match Login
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
@@ -62,15 +62,11 @@ const Signup = () => {
     }));
   };
 
-  // Add a console log to debug the auth state
-  useEffect(() => {
-    console.log("Auth state (signup):", { isAuthenticated, user, error, loading });
-  }, [isAuthenticated, user, error, loading]);
-
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
+      {/* Right Section - Full width on mobile */}
       <div className="w-full min-h-screen md:w-1/2 flex flex-col items-center justify-center p-8 bg-white">
-        <h1 className="text-2xl font-bold text-black mb-6">Create Your Account</h1>
+        <h1 className="text-3xl font-bold text-black mb-6">Create Your Account</h1>
         
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 border border-gray-100">
           {error && (
@@ -87,7 +83,7 @@ const Signup = () => {
                 placeholder="Username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full p-3 rounded-md bg-green-100"
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
                 required
               />
             </div>
@@ -99,7 +95,7 @@ const Signup = () => {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full p-3 rounded-md bg-green-100"
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
                 required
               />
             </div>
@@ -111,7 +107,7 @@ const Signup = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-3 rounded-md bg-green-100"
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
                 required
               />
               <button 
@@ -123,31 +119,15 @@ const Signup = () => {
               </button>
             </div>
             
-            {/* <div>
-              <div className="relative w-full">
-                <select 
-                  name="userType"
-                  value={formData.userType}
-                  onChange={handleChange}
-                  className="w-full p-3 rounded-md bg-green-100 appearance-none text-gray-600"
-                >
-                  <option value="" disabled>User Type</option>
-                  <option value="Farmer">Farmer</option>
-                  <option value="Vet">Veterinarian</option>
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
-                  ▼
-                </div>
-              </div>
-            </div> */}
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full p-3 bg-green-300 text-gray-800 rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {loading ? 'Registering...' : 'Register'}
-            </button>
+            <div className="flex items-center justify-center">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`px-8 py-1 bg-[#A8E6CF] text-white rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {loading ? 'Registering...' : 'Register'}
+              </button>
+            </div>
           </form>
           
           <div className="mt-6 text-center text-sm text-gray-500">
@@ -156,7 +136,8 @@ const Signup = () => {
         </div>
       </div>
 
-      <div className="hidden md:flex w-full md:w-1/2 bg-green-50 p-8 flex-col justify-center items-center min-h-screen">
+      {/* Left Section - Hidden on mobile, visible on md and up */}
+      <div className="hidden md:flex w-full md:w-1/2 bg-[#DFFFE0] p-8 flex-col justify-center items-center min-h-screen">
         <div className="max-w-md mx-auto text-center">
           <div className="mb-8">
             <img 
@@ -165,7 +146,7 @@ const Signup = () => {
               className="w-full" 
             />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 text-center">Raise. Manage. Thrive.</h2>
+          <h2 className="text-2xl font-bold text-gray-800 text-center">Raise. Manage.<br />Thrive.</h2>
         </div>
       </div>
     </div>

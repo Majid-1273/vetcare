@@ -65,6 +65,7 @@ exports.createBatch = async (req, res) => {
 exports.getAllBatches = async (req, res) => {
   try {
     const batches = await ChickenBatch.find().sort({ placementDate: -1 });
+    
 
     const batchWithCurrentCount = await Promise.all(
       batches.map(async (batch) => {

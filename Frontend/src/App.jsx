@@ -23,7 +23,7 @@ const AuthenticatedLayout = ({ children }) => {
   return (
     <div className="flex h-screen bg-white overflow-hidden">
       <Sidebar />
-      <div className="flex-1 ml-24 bg-white flex flex-col h-screen overflow-auto">
+      <div className="flex-1 ml-28 bg-white flex flex-col h-screen overflow-auto">
         {children}
       </div>
     </div>
