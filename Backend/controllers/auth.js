@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const LoginSession = require('../models/LoginSession');
 const config = require('../config/jwt');
+const Worker = require('../models/Worker');
 
 // Register a new user
 exports.register = async (req, res) => {
@@ -105,7 +106,7 @@ exports.login = async (req, res) => {
 exports.addWorker = async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    const farmerId = req.user?.id || req.body.farmerId; // Adjust this based on how you're sending farmer info
+    const farmerId = req.userId || req.body.farmerId; // Adjust this based on how you're sending farmer info
 
     if (!farmerId) {
       return res.status(400).json({ message: 'Farmer ID is required' });
@@ -138,6 +139,75 @@ exports.addWorker = async (req, res) => {
     });
   } catch (error) {
     console.error('Add worker error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+exports.getWorkers = async (req, res) => {
+  try {
+    const farmerId = req.userId || req.body.farmerId;
+
+    if (!farmerId) {
+      return res.status(400).json({ message: 'Farmer ID is required' });
+    }
+
+    const workers = await Worker.find({ farmerId });
+
+    res.json({ workers });
+  } catch (error) {
+    console.error('Get workers error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+
+exports.updateWorker = async (req, res) => {
+  try {
+    const { workerId, username, email, password } = req.body;
+
+    if (!workerId) {
+      return res.status(400).json({ message: 'Worker ID is required' });
+    }
+
+    const worker = await Worker.findById(workerId);
+
+    if (!worker) {
+      return res.status(404).json({ message: 'Worker not found' });
+    }
+
+    if (username) worker.username = username;
+    if (email) worker.email = email;
+    if (password) worker.password = password; 
+
+    await worker.save();
+
+    res.json({ message: 'Worker updated successfully', worker });
+  } catch (error) {
+    console.error('Update worker error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+exports.deleteWorker = async (req, res) => {
+  try {
+    const { workerId } = req.params;
+
+    if (!workerId) {
+      return res.status(400).json({ message: 'Worker ID is required' });
+    }
+
+    const deletedWorker = await Worker.findByIdAndDelete(workerId);
+
+    if (!deletedWorker) {
+      return res.status(404).json({ message: 'Worker not found' });
+    }
+
+    res.json({ message: 'Worker deleted successfully' });
+  } catch (error) {
+    console.error('Delete worker error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

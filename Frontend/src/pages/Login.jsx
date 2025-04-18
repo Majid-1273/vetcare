@@ -9,6 +9,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    userType: 'Farmer' // Default to Farmer
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -29,6 +30,13 @@ const Login = () => {
       if (user.userType === 'Farmer') {
         navigate('/flock-management');
       }
+      // Add redirections for other user types if needed
+      else if (user.userType === 'Vet') {
+        navigate('/vet-dashboard');
+      }
+      else if (user.userType === 'Worker') {
+        navigate('/worker-dashboard');
+      }
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -43,7 +51,7 @@ const Login = () => {
     e.preventDefault();
 
     // Validate form data
-    if (!formData.email || !formData.password) {
+    if (!formData.email || !formData.password || !formData.userType) {
       return;
     }
 
@@ -51,6 +59,7 @@ const Login = () => {
     dispatch(loginUser({
       email: formData.email,
       password: formData.password,
+      userType: formData.userType
     }));
   };
 
@@ -114,12 +123,25 @@ const Login = () => {
               </button>
             </div>
 
+            <div>
+              <select
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
+                required
+              >
+                <option value="Farmer">Farmer</option>
+                <option value="Vet">Vet</option>
+                <option value="Worker">Worker</option>
+              </select>
+            </div>
 
             <div className="flex items-center justify-center">
               <button
                 type="submit"
                 disabled={loading}
-                className={` px-8 py-1 bg-[#A8E6CF] text-white rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`px-8 py-1 bg-[#A8E6CF] text-white rounded-md hover:bg-green-400 transition-colors ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? 'Logging in...' : 'Login'}
               </button>

@@ -5,6 +5,7 @@ import flockManagement from '../../assets/images/flockManagement.png';
 import home from '../../assets/images/home.png';
 import reportsAnalytics from '../../assets/images/reportsAnalytics.png';
 import vetlocator from '../../assets/images/vetlocator.png';
+import addWroker from '../../assets/images/addWroker.png';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -34,6 +35,11 @@ const Sidebar = () => {
       path: "/reports-&-analytics",
       label: "Reports & Analytics",
       image: reportsAnalytics
+    },
+    {
+      path: "/add-worker",
+      label: "Add Worker",
+      image: addWroker
     },
   ];
 

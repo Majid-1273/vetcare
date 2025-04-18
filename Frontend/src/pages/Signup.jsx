@@ -32,6 +32,8 @@ const Signup = () => {
         navigate('/flock-management');
       } else if (user?.userType === 'Vet') {
         navigate('/vet-dashboard');
+      } else if (user?.userType === 'Worker') {
+        navigate('/worker-dashboard');
       } else {
         navigate('/flock-management');
       }
@@ -117,6 +119,20 @@ const Signup = () => {
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
+            </div>
+            
+            <div>
+              <select
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+                className="w-full p-3 rounded-xl bg-[#D9F3D8]"
+                required
+              >
+                <option value="Farmer">Farmer</option>
+                <option value="Vet">Vet</option>
+                <option value="Worker">Worker</option>
+              </select>
             </div>
             
             <div className="flex items-center justify-center">
