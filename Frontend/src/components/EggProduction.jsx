@@ -11,18 +11,12 @@ const EggProduction = () => {
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const recordsPerPage = 5;
+    const recordsPerPage = 7; // Increased to match image
     const [editingRow, setEditingRow] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
     const [batchInfo, setBatchInfo] = useState(null);
-    const [showStats, setShowStats] = useState(false);
-    const [productionStats, setProductionStats] = useState({
-        totalEggs: 0,
-        avgDaily: 0,
-        avgEfficiency: 0,
-        brokenPercentage: 0
-    });
+    const [selectedRows, setSelectedRows] = useState([]);
     
     const { token } = useSelector((state) => state.auth);
     const batchId = id;
@@ -31,8 +25,8 @@ const EggProduction = () => {
     const [newEggProduction, setNewEggProduction] = useState({
         date: new Date().toISOString().split('T')[0],
         morningEggs: 0,
-        noonEggs: 0,
-        eveningEggs: 0,
+        midmorningEggs: 0, // Renamed from noonEggs
+        afternoonEggs: 0, // Renamed from eveningEggs
         brokenEggs: 0
     });
     
@@ -40,8 +34,8 @@ const EggProduction = () => {
     const [editFormData, setEditFormData] = useState({
         date: "",
         morningEggs: 0,
-        noonEggs: 0,
-        eveningEggs: 0,
+        midmorningEggs: 0, // Renamed from noonEggs
+        afternoonEggs: 0, // Renamed from eveningEggs
         brokenEggs: 0
     });
 
@@ -53,8 +47,14 @@ const EggProduction = () => {
                     Authorization: `Bearer ${token}`
                 }
             });
-            setEggProductions(response.data);
-            calculateStats(response.data);
+            // Map the response to match our new field names
+            const mappedData = response.data.map(item => ({
+                ...item,
+                midmorningEggs: item.noonEggs,
+                afternoonEggs: item.eveningEggs,
+                totalEggs: item.morningEggs + item.noonEggs + item.eveningEggs
+            }));
+            setEggProductions(mappedData);
             setError(null);
         } catch (err) {
             console.error('Error fetching egg production records:', err);
@@ -75,40 +75,6 @@ const EggProduction = () => {
         } catch (err) {
             console.error('Error fetching batch information:', err);
         }
-    };
-
-    // Calculate stats from egg production data
-    const calculateStats = (data) => {
-        if (!data || data.length === 0) {
-            setProductionStats({
-                totalEggs: 0,
-                avgDaily: 0,
-                avgEfficiency: 0,
-                brokenPercentage: 0
-            });
-            return;
-        }
-
-        const totalEggs = data.reduce((sum, record) => {
-            return sum + (record.morningEggs + record.noonEggs + record.eveningEggs);
-        }, 0);
-
-        const totalBroken = data.reduce((sum, record) => sum + record.brokenEggs, 0);
-        
-        const avgDaily = totalEggs / data.length;
-        
-        const avgEfficiency = data.reduce((sum, record) => {
-            return sum + record.productionPercentage;
-        }, 0) / data.length;
-
-        const brokenPercentage = totalEggs > 0 ? (totalBroken / totalEggs) * 100 : 0;
-
-        setProductionStats({
-            totalEggs,
-            avgDaily: parseFloat(avgDaily.toFixed(2)),
-            avgEfficiency: parseFloat(avgEfficiency.toFixed(2)),
-            brokenPercentage: parseFloat(brokenPercentage.toFixed(2))
-        });
     };
 
     useEffect(() => {
@@ -132,18 +98,25 @@ const EggProduction = () => {
         try {
             if (parseInt(newEggProduction.brokenEggs) > 
                 (parseInt(newEggProduction.morningEggs) + 
-                parseInt(newEggProduction.noonEggs) + 
-                parseInt(newEggProduction.eveningEggs))) {
+                parseInt(newEggProduction.midmorningEggs) + 
+                parseInt(newEggProduction.afternoonEggs))) {
                 alert("Broken eggs cannot exceed total eggs collected.");
                 return;
             }
 
+            // Map back to the API's expected field names
+            const apiData = {
+                date: newEggProduction.date,
+                morningEggs: parseInt(newEggProduction.morningEggs),
+                noonEggs: parseInt(newEggProduction.midmorningEggs),
+                eveningEggs: parseInt(newEggProduction.afternoonEggs),
+                brokenEggs: parseInt(newEggProduction.brokenEggs),
+                batchId
+            };
+
             const response = await axios.post(
                 'http://localhost:5000/api/egg-production', 
-                {
-                    ...newEggProduction,
-                    batchId
-                },
+                apiData,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -152,14 +125,23 @@ const EggProduction = () => {
                 }
             );
             
-            setEggProductions([response.data.eggProduction, ...eggProductions]);
-            calculateStats([response.data.eggProduction, ...eggProductions]);
+            // Add totalEggs field to the new record
+            const newRecord = {
+                ...response.data.eggProduction,
+                midmorningEggs: response.data.eggProduction.noonEggs,
+                afternoonEggs: response.data.eggProduction.eveningEggs,
+                totalEggs: response.data.eggProduction.morningEggs + 
+                           response.data.eggProduction.noonEggs + 
+                           response.data.eggProduction.eveningEggs
+            };
+            
+            setEggProductions([newRecord, ...eggProductions]);
             
             setNewEggProduction({
                 date: new Date().toISOString().split('T')[0],
                 morningEggs: 0,
-                noonEggs: 0,
-                eveningEggs: 0,
+                midmorningEggs: 0,
+                afternoonEggs: 0,
                 brokenEggs: 0
             });
             setShowAddModal(false);
@@ -183,8 +165,8 @@ const EggProduction = () => {
         setEditFormData({
             date: date,
             morningEggs: record.morningEggs,
-            noonEggs: record.noonEggs,
-            eveningEggs: record.eveningEggs,
+            midmorningEggs: record.midmorningEggs || record.noonEggs,
+            afternoonEggs: record.afternoonEggs || record.eveningEggs,
             brokenEggs: record.brokenEggs
         });
     };
@@ -203,15 +185,24 @@ const EggProduction = () => {
         try {
             if (parseInt(editFormData.brokenEggs) > 
                 (parseInt(editFormData.morningEggs) + 
-                parseInt(editFormData.noonEggs) + 
-                parseInt(editFormData.eveningEggs))) {
+                parseInt(editFormData.midmorningEggs) + 
+                parseInt(editFormData.afternoonEggs))) {
                 alert("Broken eggs cannot exceed total eggs collected.");
                 return;
             }
 
+            // Map back to the API's expected field names
+            const apiData = {
+                date: editFormData.date,
+                morningEggs: parseInt(editFormData.morningEggs),
+                noonEggs: parseInt(editFormData.midmorningEggs),
+                eveningEggs: parseInt(editFormData.afternoonEggs),
+                brokenEggs: parseInt(editFormData.brokenEggs)
+            };
+
             const response = await axios.put(
                 `http://localhost:5000/api/egg-production/${id}`,
-                editFormData,
+                apiData,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -220,12 +211,20 @@ const EggProduction = () => {
                 }
             );
             
+            const updatedRecord = {
+                ...response.data.eggProduction,
+                midmorningEggs: response.data.eggProduction.noonEggs,
+                afternoonEggs: response.data.eggProduction.eveningEggs,
+                totalEggs: response.data.eggProduction.morningEggs + 
+                           response.data.eggProduction.noonEggs + 
+                           response.data.eggProduction.eveningEggs
+            };
+            
             const updatedRecords = eggProductions.map(record => 
-                record._id === id ? response.data.eggProduction : record
+                record._id === id ? updatedRecord : record
             );
             
             setEggProductions(updatedRecords);
-            calculateStats(updatedRecords);
             
             // Exit edit mode
             setEditingRow(null);
@@ -257,7 +256,6 @@ const EggProduction = () => {
             
             const updatedRecords = eggProductions.filter(record => record._id !== rowToDelete);
             setEggProductions(updatedRecords);
-            calculateStats(updatedRecords);
             
             setShowDeleteModal(false);
             setRowToDelete(null);
@@ -286,11 +284,26 @@ const EggProduction = () => {
         });
     };
 
+    // Handle row selection
+    const handleRowSelect = (id) => {
+        if (selectedRows.includes(id)) {
+            setSelectedRows(selectedRows.filter(rowId => rowId !== id));
+        } else {
+            setSelectedRows([...selectedRows, id]);
+        }
+    };
+
+    // Handle download
+    const handleDownload = () => {
+        // This would be connected to your export logic
+        alert("Download functionality would be implemented here");
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 md:p-6 flex items-center justify-center">
+            <div className="min-h-screen bg-white p-4 md:p-6 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading egg production records...</p>
                 </div>
             </div>
@@ -298,35 +311,22 @@ const EggProduction = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 md:p-6">
+        <div className="min-h-screen bg-white p-4 md:p-6">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-green-800">Egg Production Management</h1>
-                        <p className="text-gray-600">
-                            {batchInfo && 
-                                `Track and manage egg records for ${batchInfo.name} (${batchInfo.breedType})`}
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-800">Daily Egg Production</h1>
                     </div>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setShowStats(!showStats)}
-                            className={`${showStats ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'} font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            {showStats ? "Hide Stats" : "Show Statistics"}
-                        </button>
+                    <div>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg"
+                            className="bg-green-400 hover:bg-green-500 text-white font-medium py-2 px-4 rounded-lg flex items-center transition"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
-                            Add Production Record
+                            Add Egg Production Record
                         </button>
                     </div>
                 </div>
@@ -347,36 +347,6 @@ const EggProduction = () => {
                     </div>
                 )}
 
-                {/* Statistics Section */}
-                {showStats && (
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-                        <div className="bg-blue-50 p-4 border-b border-blue-100">
-                            <h2 className="text-lg font-semibold text-blue-800">Production Statistics</h2>
-                        </div>
-                        
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div className="bg-green-50 rounded-lg p-4 shadow-sm">
-                                    <h3 className="text-sm font-medium text-gray-500 uppercase">Total Eggs</h3>
-                                    <p className="text-3xl font-bold text-green-700">{productionStats.totalEggs}</p>
-                                </div>
-                                <div className="bg-blue-50 rounded-lg p-4 shadow-sm">
-                                    <h3 className="text-sm font-medium text-gray-500 uppercase">Avg. Daily Collection</h3>
-                                    <p className="text-3xl font-bold text-blue-700">{productionStats.avgDaily}</p>
-                                </div>
-                                <div className="bg-purple-50 rounded-lg p-4 shadow-sm">
-                                    <h3 className="text-sm font-medium text-gray-500 uppercase">Avg. Efficiency</h3>
-                                    <p className="text-3xl font-bold text-purple-700">{productionStats.avgEfficiency}%</p>
-                                </div>
-                                <div className="bg-red-50 rounded-lg p-4 shadow-sm">
-                                    <h3 className="text-sm font-medium text-gray-500 uppercase">Broken Egg Rate</h3>
-                                    <p className="text-3xl font-bold text-red-700">{productionStats.brokenPercentage}%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Egg Production Records Table */}
                 {eggProductions.length === 0 ? (
                     <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -389,157 +359,204 @@ const EggProduction = () => {
                         <p className="text-gray-600 mb-4">Add your first egg production record to start tracking productivity</p>
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg shadow-md hover:shadow-lg"
+                            className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg"
                         >
                             Add First Production Record
                         </button>
                     </div>
                 ) : (
                     <>
-                        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+                        <div className="bg-white rounded-lg overflow-hidden mb-6 border border-gray-200">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead>
                                     <tr className="bg-gray-50">
+                                        <th className="py-3 px-4 text-left">
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                                                onChange={() => {
+                                                    if (selectedRows.length === currentRecords.length) {
+                                                        setSelectedRows([]);
+                                                    } else {
+                                                        setSelectedRows(currentRecords.map(r => r._id));
+                                                    }
+                                                }}
+                                                checked={selectedRows.length === currentRecords.length && currentRecords.length > 0}
+                                            />
+                                        </th>
                                         <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Morning</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Noon</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evening</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broken</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Efficiency</th>
+                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Midmorning</th>
+                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Afternoon</th>
+                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Eggs</th>
+                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broken Eggs</th>
+                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Production %</th>
                                         <th className="py-3 px-4 text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {currentRecords.map((record) => (
-                                        <tr key={record._id} className="bg-white hover:bg-gray-50 transition-colors">
-                                            {editingRow === record._id ? (
-                                                // Edit mode
-                                                <>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="date"
-                                                            name="date"
-                                                            value={editFormData.date}
-                                                            onChange={handleEditFormChange}
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="number"
-                                                            name="morningEggs"
-                                                            value={editFormData.morningEggs}
-                                                            onChange={handleEditFormChange}
-                                                            min="0"
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="number"
-                                                            name="noonEggs"
-                                                            value={editFormData.noonEggs}
-                                                            onChange={handleEditFormChange}
-                                                            min="0"
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="number"
-                                                            name="eveningEggs"
-                                                            value={editFormData.eveningEggs}
-                                                            onChange={handleEditFormChange}
-                                                            min="0"
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="number"
-                                                            name="brokenEggs"
-                                                            value={editFormData.brokenEggs}
-                                                            onChange={handleEditFormChange}
-                                                            min="0"
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        {/* Efficiency is calculated on the server */}
-                                                        {record.productionPercentage.toFixed(2)}%
-                                                    </td>
-                                                    <td className="py-2 px-4 text-right">
-                                                        <div className="flex justify-end space-x-2">
-                                                            <button 
-                                                                onClick={() => handleSaveClick(record._id)}
-                                                                className="text-green-600 hover:text-green-800 focus:outline-none"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                            </button>
-                                                            <button 
-                                                                onClick={handleCancelClick}
-                                                                className="text-red-600 hover:text-red-800 focus:outline-none"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </>
-                                            ) : (
-                                                // View mode
-                                                <>
-                                                    <td className="py-4 px-4 font-medium">{formatDate(record.date)}</td>
-                                                    <td className="py-4 px-4">{record.morningEggs}</td>
-                                                    <td className="py-4 px-4">{record.noonEggs}</td>
-                                                    <td className="py-4 px-4">{record.eveningEggs}</td>
-                                                    <td className="py-4 px-4">
-                                                        <span className={`px-2 py-1 rounded ${record.brokenEggs > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                            {record.brokenEggs}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <div className="flex items-center">
-                                                            <div className="w-16 bg-gray-200 rounded-full h-2.5 mr-2">
-                                                                <div 
-                                                                    className={`h-2.5 rounded-full ${record.productionPercentage >= 90 ? 'bg-green-600' : record.productionPercentage >= 70 ? 'bg-yellow-400' : 'bg-red-500'}`} 
-                                                                    style={{ width: `${record.productionPercentage}%` }}>
-                                                                </div>
+                                    {currentRecords.map((record) => {
+                                        const isSelected = selectedRows.includes(record._id);
+                                        return (
+                                            <tr key={record._id} className={`${isSelected ? 'bg-green-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}>
+                                                {editingRow === record._id ? (
+                                                    // Edit mode
+                                                    <>
+                                                        <td className="py-2 px-4">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                                                                checked={isSelected}
+                                                                onChange={() => handleRowSelect(record._id)}
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <input
+                                                                type="date"
+                                                                name="date"
+                                                                value={editFormData.date}
+                                                                onChange={handleEditFormChange}
+                                                                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <input
+                                                                type="number"
+                                                                name="morningEggs"
+                                                                value={editFormData.morningEggs}
+                                                                onChange={handleEditFormChange}
+                                                                min="0"
+                                                                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <input
+                                                                type="number"
+                                                                name="midmorningEggs"
+                                                                value={editFormData.midmorningEggs}
+                                                                onChange={handleEditFormChange}
+                                                                min="0"
+                                                                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <input
+                                                                type="number"
+                                                                name="afternoonEggs"
+                                                                value={editFormData.afternoonEggs}
+                                                                onChange={handleEditFormChange}
+                                                                min="0"
+                                                                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            {parseInt(editFormData.morningEggs) + 
+                                                             parseInt(editFormData.midmorningEggs) + 
+                                                             parseInt(editFormData.afternoonEggs)}
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            <input
+                                                                type="number"
+                                                                name="brokenEggs"
+                                                                value={editFormData.brokenEggs}
+                                                                onChange={handleEditFormChange}
+                                                                min="0"
+                                                                className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                                                            />
+                                                        </td>
+                                                        <td className="py-2 px-4">
+                                                            {/* Efficiency is calculated on the server */}
+                                                            {record.productionPercentage.toFixed(2)}%
+                                                        </td>
+                                                        <td className="py-2 px-4 text-right">
+                                                            <div className="flex justify-end space-x-2">
+                                                                <button 
+                                                                    onClick={() => handleSaveClick(record._id)}
+                                                                    className="text-green-600 hover:text-green-800 focus:outline-none"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={handleCancelClick}
+                                                                    className="text-red-600 hover:text-red-800 focus:outline-none"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
                                                             </div>
-                                                            <span>{record.productionPercentage.toFixed(2)}%</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-4 text-right">
-                                                        <div className="flex justify-end space-x-2">
-                                                            <button 
-                                                                onClick={() => handleEditClick(record)}
-                                                                className="text-gray-600 hover:text-blue-600 focus:outline-none"
-                                                                title="Edit"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteClick(record._id)}
-                                                                className="text-gray-600 hover:text-red-600 focus:outline-none"
-                                                                title="Delete"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </>
-                                            )}
-                                        </tr>
-                                    ))}
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    // View mode
+                                                    <>
+                                                        <td className="py-4 px-4">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                                                                checked={isSelected}
+                                                                onChange={() => handleRowSelect(record._id)}
+                                                            />
+                                                        </td>
+                                                        <td className="py-4 px-4 font-medium">{formatDate(record.date)}</td>
+                                                        <td className="py-4 px-4">{record.morningEggs}</td>
+                                                        <td className="py-4 px-4">{record.midmorningEggs || record.noonEggs}</td>
+                                                        <td className="py-4 px-4">{record.afternoonEggs || record.eveningEggs}</td>
+                                                        <td className="py-4 px-4">
+                                                            {record.totalEggs || 
+                                                             (record.morningEggs + (record.midmorningEggs || record.noonEggs) + 
+                                                              (record.afternoonEggs || record.eveningEggs))}
+                                                        </td>
+                                                        <td className="py-4 px-4">
+                                                            {record.brokenEggs}
+                                                        </td>
+                                                        <td className="py-4 px-4">
+                                                            {record.productionPercentage.toFixed(2)}%
+                                                        </td>
+                                                        <td className="py-4 px-4 text-right">
+                                                            <div className="flex justify-end space-x-2">
+                                                                <button 
+                                                                    onClick={() => handleEditClick(record)}
+                                                                    className="text-gray-400 hover:text-blue-600 focus:outline-none"
+                                                                    title="Edit"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                    </svg>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleDeleteClick(record._id)}
+                                                                    className="text-gray-400 hover:text-red-600 focus:outline-none"
+                                                                    title="Delete"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </>
+                                                )}
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Download Button */}
+                        <div className="mb-4">
+                            <button
+                                onClick={handleDownload}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg flex items-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download
+                            </button>
                         </div>
 
                         {/* Pagination */}
@@ -583,8 +600,8 @@ const EggProduction = () => {
                     </>
                 )}
 
-                {/* Add New Egg Production Modal */}
-                {showAddModal && (
+ {/* Add New Egg Production Modal */}
+ {showAddModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-4">

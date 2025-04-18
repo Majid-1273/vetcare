@@ -17,6 +17,7 @@ const Vaccination = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
     const [showUpcoming, setShowUpcoming] = useState(false);
+    const [selectedItems, setSelectedItems] = useState([]);
     
     const { token } = useSelector((state) => state.auth);
     const batchId = id;
@@ -64,6 +65,7 @@ const Vaccination = () => {
         } catch (err) {
             console.error('Error fetching vaccinations:', err);
             setError('Failed to fetch vaccination records. Please try again later.');
+            setVaccinations([]); // Ensure empty array on error
         } finally {
             setLoading(false);
         }
@@ -93,10 +95,35 @@ const Vaccination = () => {
     }, [token, batchId]);
 
     // Calculate pagination
-    const indexOfLastRecord = currentPage * recordsPerPage;
-    const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-    const currentRecords = vaccinations.slice(indexOfFirstRecord, indexOfLastRecord);
-    const totalPages = Math.ceil(vaccinations.length / recordsPerPage);
+    const totalRecords = Math.max(vaccinations.length, recordsPerPage);
+    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    
+    // Get current records with handling empty data
+    const getCurrentRecords = () => {
+        const startIndex = (currentPage - 1) * recordsPerPage;
+        const endIndex = startIndex + recordsPerPage;
+        
+        // If we have real data
+        if (vaccinations.length > 0) {
+            return vaccinations.slice(startIndex, endIndex);
+        }
+        
+        // If no data, return empty placeholders
+        return Array(recordsPerPage).fill(null);
+    };
+    
+    const currentRecords = getCurrentRecords();
+
+    // Toggle item selection - only for actual records
+    const toggleItemSelection = (id) => {
+        if (!id) return; // Skip if empty row
+        
+        if (selectedItems.includes(id)) {
+            setSelectedItems(selectedItems.filter(item => item !== id));
+        } else {
+            setSelectedItems([...selectedItems, id]);
+        }
+    };
 
     // Handle adding new vaccination
     const handleAddVaccination = async () => {
@@ -132,8 +159,10 @@ const Vaccination = () => {
         }
     };
 
-    // Handle edit click
+    // Handle edit click - only for actual records
     const handleEditClick = (record) => {
+        if (!record || !record._id) return; // Skip if empty row
+        
         setEditingRow(record._id);
         
         // Format dates for the form
@@ -191,8 +220,10 @@ const Vaccination = () => {
         setEditingRow(null);
     };
 
-    // Handle delete click
+    // Handle delete click - only for actual records
     const handleDeleteClick = (id) => {
+        if (!id) return; // Skip if empty row
+        
         setRowToDelete(id);
         setShowDeleteModal(true);
     };
@@ -225,6 +256,12 @@ const Vaccination = () => {
             [name]: value
         });
     };
+    
+    // Dummy download function
+    const handleDownload = () => {
+        console.log("Download button clicked");
+        // This is just a dummy function - no actual download happens
+    };
 
     if (loading) {
         return (
@@ -238,34 +275,17 @@ const Vaccination = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-green-50 to-white p-4 md:p-6">
+        <div className="min-h-screen bg-white p-4">
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-green-800">Vaccination Management</h1>
-                        <p className="text-gray-600">Track and manage vaccination records for your flock</p>
-                    </div>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setShowUpcoming(!showUpcoming)}
-                            className={`${showUpcoming ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'} font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {showUpcoming ? "Hide Upcoming" : "Upcoming Vaccinations"}
-                        </button>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition shadow-md hover:shadow-lg"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Vaccination
-                        </button>
-                    </div>
+                    <h1 className="text-xl font-medium text-gray-800">Vaccination Schedule</h1>
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md"
+                    >
+                        + Add Vaccination Record
+                    </button>
                 </div>
 
                 {/* Error Message */}
@@ -284,226 +304,116 @@ const Vaccination = () => {
                     </div>
                 )}
 
-                {/* Upcoming Vaccinations Section */}
-                {showUpcoming && (
-                    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-                        <div className="bg-blue-50 p-4 border-b border-blue-100">
-                            <h2 className="text-lg font-semibold text-blue-800">Upcoming Vaccinations (Next 7 Days)</h2>
-                        </div>
-                        
-                        {upcomingVaccinations.length === 0 ? (
-                            <div className="p-6 text-center">
-                                <p className="text-gray-600">No upcoming vaccinations in the next 7 days.</p>
-                            </div>
-                        ) : (
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr className="bg-blue-50">
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Name</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vaccination Type</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">petName</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {upcomingVaccinations.map((vaccination) => (
-                                        <tr key={vaccination._id} className="bg-white hover:bg-gray-50 transition-colors">
-                                            <td className="py-4 px-4 font-medium">{vaccination.batchName}</td>
-                                            <td className="py-4 px-4">{vaccination.vaccinationType}</td>
-                                            <td className="py-4 px-4">{new Date(vaccination.nextDoseDate).toLocaleDateString()}</td>
-                                            <td className="py-4 px-4">{vaccination.petName || '-'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                )}
+                {/* Table */}
+                <div className="bg-white rounded-lg border border-gray-200 mb-6">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr className="bg-gray-50">
+                                <th className="py-3 px-4 text-left">
+                                    <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vaccine Type</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Given</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Number</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Dose Due</th>
+                                <th className="py-3 px-4 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {currentRecords.map((record, index) => (
+                                <tr key={record?._id || `empty-row-${index}`} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4">
+                                        <input
+                                            type="checkbox"
+                                            className="h-4 w-4 rounded border-gray-300"
+                                            checked={record?._id ? selectedItems.includes(record._id) : false}
+                                            onChange={() => toggleItemSelection(record?._id)}
+                                            disabled={!record}
+                                        />
+                                    </td>
+                                    <td className="py-3 px-4">{record?.vaccinationType || '-'}</td>
+                                    <td className="py-3 px-4">{record?.dateGiven ? new Date(record.dateGiven).toLocaleDateString() : '-'}</td>
+                                    <td className="py-3 px-4">{record?.batchId || '-'}</td>
+                                    <td className="py-3 px-4">
+                                        {record?.nextDoseDate ? new Date(record.nextDoseDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+    <div className="flex justify-end">
+        {/* Edit Button */}
+        <button
+            onClick={() => handleEditClick(record)}
+            className={`text-gray-500 hover:text-blue-600 transition-colors duration-200 mr-3 ${
+                !record ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={!record}
+            title="Edit"
+        >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+        </button>
 
-                {/* Vaccination Records Table */}
-                {vaccinations.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                        <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No vaccination records added yet</h3>
-                        <p className="text-gray-600 mb-4">Add your first vaccination record to start tracking health status</p>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg shadow-md hover:shadow-lg"
-                        >
-                            Add First Vaccination
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vaccination Type</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Given</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Dose Due</th>
-                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">petName</th>
-                                        <th className="py-3 px-4 text-right"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {currentRecords.map((record) => (
-                                        <tr key={record._id} className="bg-white hover:bg-gray-50 transition-colors">
-                                            {editingRow === record._id ? (
-                                                // Edit mode
-                                                <>
-                                                    <td className="py-2 px-4">
-                                                        <select
-                                                            name="vaccinationType"
-                                                            value={editFormData.vaccinationType}
-                                                            onChange={handleEditFormChange}
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        >
-                                                            {vaccinationTypes.map(type => (
-                                                                <option key={type} value={type}>{type}</option>
-                                                            ))}
-                                                        </select>
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="date"
-                                                            name="dateGiven"
-                                                            value={editFormData.dateGiven}
-                                                            onChange={handleEditFormChange}
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="date"
-                                                            name="nextDoseDate"
-                                                            value={editFormData.nextDoseDate}
-                                                            onChange={handleEditFormChange}
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4">
-                                                        <input
-                                                            type="text"
-                                                            name="petName"
-                                                            value={editFormData.petName}
-                                                            onChange={handleEditFormChange}
-                                                            className="border rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                            placeholder="Add petName"
-                                                        />
-                                                    </td>
-                                                    <td className="py-2 px-4 text-right">
-                                                        <div className="flex justify-end space-x-2">
-                                                            <button 
-                                                                onClick={() => handleSaveClick(record._id)}
-                                                                className="text-green-600 hover:text-green-800 focus:outline-none"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                            </button>
-                                                            <button 
-                                                                onClick={handleCancelClick}
-                                                                className="text-red-600 hover:text-red-800 focus:outline-none"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </>
-                                            ) : (
-                                                // View mode
-                                                <>
-                                                    <td className="py-4 px-4 font-medium">{record.vaccinationType}</td>
-                                                    <td className="py-4 px-4">{new Date(record.dateGiven).toLocaleDateString()}</td>
-                                                    <td className="py-4 px-4">
-                                                        {record.nextDoseDate ? (
-                                                            <span className={`px-2 py-1 rounded ${
-                                                                new Date(record.nextDoseDate) < new Date() 
-                                                                    ? 'bg-red-100 text-red-800' 
-                                                                    : 'bg-green-100 text-green-800'
-                                                            }`}>
-                                                                {new Date(record.nextDoseDate).toLocaleDateString()}
-                                                            </span>
-                                                        ) : '-'}
-                                                    </td>
-                                                    <td className="py-4 px-4">{record.petName || '-'}</td>
-                                                    <td className="py-4 px-4 text-right">
-                                                        <div className="flex justify-end space-x-2">
-                                                            <button 
-                                                                onClick={() => handleEditClick(record)}
-                                                                className="text-gray-600 hover:text-blue-600 focus:outline-none"
-                                                                title="Edit"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                </svg>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleDeleteClick(record._id)}
-                                                                className="text-gray-600 hover:text-red-600 focus:outline-none"
-                                                                title="Delete"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </>
-                                            )}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+        {/* Delete Button */}
+        <button
+            onClick={() => handleDeleteClick(record?._id)}
+            className={`text-gray-500 hover:text-red-600 transition-colors duration-200 ${
+                !record ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={!record}
+            title="Delete"
+        >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+        </button>
+    </div>
+</td>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="flex justify-center mt-6">
-                                <nav className="flex items-center space-x-1">
-                                    <button 
-                                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                                        className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
-                                        disabled={currentPage === 1}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                        </svg>
-                                    </button>
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() => setCurrentPage(page)}
-                                            className={`px-3 py-1 rounded ${
-                                                currentPage === page
-                                                    ? 'bg-green-600 text-white font-medium'
-                                                    : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            {page}
-                                        </button>
-                                    ))}
-                                    <button 
-                                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                                        className="px-3 py-1 rounded text-gray-600 hover:bg-gray-100"
-                                        disabled={currentPage === totalPages}
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                </nav>
-                            </div>
-                        )}
-                    </>
-                )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+{/* Bottom Controls - Download Button and Pagination */}
+<div className="flex items-center justify-between mt-4">
+    {/* Download Button - Bottom Left */}
+    <button
+        onClick={handleDownload}
+        className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md"
+    >
+        Download
+    </button>
+
+    {/* Pagination - Centered */}
+    <div className="flex-1 flex justify-center">
+        <div className="flex space-x-1">
+            {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                    key={index}
+                    onClick={() => setCurrentPage(index + 1)}
+                    disabled={vaccinations.length === 0}
+                    className={`h-8 w-8 flex items-center justify-center rounded border ${
+                        currentPage === index + 1
+                            ? 'border-gray-900 font-medium bg-transparent'
+                            : vaccinations.length === 0
+                                ? 'text-gray-400 cursor-not-allowed border-gray-300 bg-transparent'
+                                : 'text-gray-700 hover:bg-gray-100 border-gray-300 bg-transparent'
+                    }`}
+                >
+                    {index + 1}
+                </button>
+            ))}
+        </div>
+    </div>
+
+    {/* Spacer to balance the layout */}
+    <div className="w-[150px]" />
+</div>
+
 
                 {/* Add New Vaccination Modal */}
                 {showAddModal && (
@@ -552,14 +462,14 @@ const Vaccination = () => {
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-gray-700 mb-1">petName</label>
+                                    <label className="block text-gray-700 mb-1">Notes</label>
                                     <textarea
                                         name="petName"
                                         value={newVaccination.petName}
                                         onChange={handleNewVaccinationChange}
                                         className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                                         rows="3"
-                                        placeholder="Enter your petName"
+                                        placeholder="Enter your notes"
                                     ></textarea>
                                 </div>
                             </div>
@@ -589,7 +499,7 @@ const Vaccination = () => {
                             <h3 className="text-xl font-semibold mb-4">Confirm Delete</h3>
                             <p className="mb-6 text-gray-600">Are you sure you want to delete this vaccination record? This action cannot be undone.</p>
                             <div className="flex justify-end space-x-3">
-                            <button 
+                                <button 
                                     onClick={() => setShowDeleteModal(false)} 
                                     className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
                                 >
@@ -605,7 +515,6 @@ const Vaccination = () => {
                         </div>
                     </div>
                 )}
-
             </div>
         </div>
     );
