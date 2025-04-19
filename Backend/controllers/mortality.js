@@ -50,6 +50,7 @@ exports.createMortalityRecord = async (req, res) => {
       mortalityRate,
       cumulativeLoss,
       createdBy: req.userId,
+      chickenType: batch.breedType,
     });
 
     await mortalityRecord.save();

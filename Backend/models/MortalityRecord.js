@@ -22,6 +22,10 @@ const mortalityRecordSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  chickenType: {
+    type: String,
+    required: true
+  },
   cumulativeLoss: {
     type: Number,
     required: true

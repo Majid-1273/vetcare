@@ -8,6 +8,7 @@ const feedRoutes = require('./routes/feed');
 const eggProductionRoutes = require('./routes/eggProduction');
 const mortalityRoutes = require('./routes/mortality');
 const farm = require('./routes/farms');
+const financialRoutes = require('./routes/financial');
 const { verifyToken } = require('./middlewares/auth');
 
 // Import the database connection
@@ -35,6 +36,7 @@ app.use('/api/feeds', verifyToken, feedRoutes);
 app.use('/api/egg-production', verifyToken, eggProductionRoutes);
 app.use('/api/mortality', verifyToken, mortalityRoutes);
 app.use('/api/farm', verifyToken, farm);
+app.use('/api/financial', verifyToken, financialRoutes);
 
 // Default route
 app.get('/', (req, res) => {

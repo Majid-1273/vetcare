@@ -20,6 +20,11 @@ const chickenBatchSchema = new mongoose.Schema({
   initialCount: {
     type: Number,
     required: true
+  },
+  farmerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   }
 });
 

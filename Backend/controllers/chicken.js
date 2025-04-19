@@ -46,7 +46,8 @@ exports.createBatch = async (req, res) => {
       breed,
       breedType,
       placementDate,
-      initialCount
+      initialCount,
+      farmerId: req.userId // Add the farmer's ID from the authenticated user
     });
 
     await batch.save();
@@ -64,8 +65,7 @@ exports.createBatch = async (req, res) => {
 // Get all batches
 exports.getAllBatches = async (req, res) => {
   try {
-    const batches = await ChickenBatch.find().sort({ placementDate: -1 });
-    
+    const batches = await ChickenBatch.find({ farmerId: req.userId }).sort({ placementDate: -1 });
 
     const batchWithCurrentCount = await Promise.all(
       batches.map(async (batch) => {
@@ -87,6 +87,7 @@ exports.getAllBatches = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 // Get batch by generated ID (e.g., BATCH-001)
 exports.getBatchById = async (req, res) => {

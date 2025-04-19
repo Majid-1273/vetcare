@@ -24,6 +24,7 @@ import BroilerDetails from "./pages/BroilerDetails";
 import FarmInfoForm from "./pages/FarmDetails";
 import Profile from "./pages/Profile";
 import AddWorker from "./pages/AddWorker";
+import FinancialRecord from "./pages/FinancialRecord";
 
 const AuthenticatedLayout = ({ children }) => {
   return (
@@ -106,6 +107,10 @@ function App() {
             <Route
               path="/broiler/:id"
               element={<AuthenticatedLayout><BroilerDetails /></AuthenticatedLayout>}
+            />
+            <Route
+              path="/financial-record"
+              element={<AuthenticatedLayout><FinancialRecord /></AuthenticatedLayout>}
             />
           </Route>
 
