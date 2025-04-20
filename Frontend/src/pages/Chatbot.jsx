@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Search, Send, ArrowRight, HelpCircle } from 'lucide-react';
+import { Search, Send, ArrowRight, HelpCircle } from 'lucide-react';
+import axios from 'axios';
+import { useSelector } from 'react-redux';
+import ReactMarkdown from 'react-markdown';
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Hi there! How can I help you today?", sender: "bot" },
-  ]);
   const [inputValue, setInputValue] = useState("");
+  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const [showChat, setShowChat] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { token } = useSelector((state) => state.auth);
   
   // Auto-scroll to bottom of messages
   const scrollToBottom = () => {
@@ -18,42 +22,72 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
   
-  // Handle sending a new message
-  const handleSendMessage = (e) => {
+  // Handle sending a new message and getting response from API
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (inputValue.trim() === "") return;
     
     // Add user message
-    const newMessage = { id: messages.length + 1, text: inputValue, sender: "user" };
-    setMessages([...messages, newMessage]);
-    setInputValue("");
+    const userMessage = { id: messages.length + 1, text: inputValue, sender: "user" };
+    setMessages(prev => [...prev, userMessage]);
     
-    // Simulate bot response after a delay
-    setTimeout(() => {
-      const botResponses = [
-        "I'm here to help! What would you like to know?",
-        "That's an interesting question. Let me assist you.",
-        "Thanks for reaching out. How can I help you further?",
-        "I understand. Is there anything specific you'd like to explore?",
-        "Great question! Let me provide some information on that."
-      ];
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      setMessages(prev => [...prev, { id: prev.length + 1, text: randomResponse, sender: "bot" }]);
-    }, 1000);
+    // Clear input and show loading
+    const query = inputValue;
+    setInputValue("");
+    setLoading(true);
+    
+    try {
+      const response = await axios.post('http://localhost:5000/api/farm-analysis', 
+        { text: query },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Add bot response from API
+      if (response.data && response.data.response) {
+        setMessages(prev => [...prev, { 
+          id: prev.length + 1, 
+          text: response.data.response, 
+          sender: "bot" 
+        }]);
+      } else {
+        throw new Error('Invalid response from API');
+      }
+    } catch (error) {
+      console.error('Error getting response:', error);
+      // Add error message
+      setMessages(prev => [...prev, { 
+        id: prev.length + 1, 
+        text: "Sorry, I'm having trouble connecting to the farm analysis service. Please try again later.", 
+        sender: "bot" 
+      }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSuggestionClick = (text) => {
     setInputValue(text);
     setShowChat(true);
-    // Simulate submitting the suggestion
+    // Use setTimeout to ensure state updates before sending
     setTimeout(() => {
-      handleSendMessage({ preventDefault: () => {} });
+      const event = { preventDefault: () => {} };
+      handleSendMessage(event);
     }, 100);
   };
   
+  // Farm-specific suggested questions
+  const suggestions = [
+    "What are the symptoms of common poultry diseases?",
+    "How can I improve egg production in my layer hens?",
+    "What's the ideal feed formula for broiler chickens?",
+    "How to prevent heatstroke in chickens during summer?",
+    "What's the best vaccination schedule for layer hens?",
+    "How to improve feed conversion ratio in broilers?"
+  ];
+  
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-white to-green-50">
-      {/* Top Navigation/Search Bar - Keeping Original */}
+    <div className="h-screen flex flex-col bg-gradient-to-br from-white to-green-50 overflow-hidden">
+      {/* Top Navigation/Search Bar */}
       <div className="p-4 bg-white border-b flex items-center justify-between sticky top-0 z-10">
         <div className="relative w-64">
           <input
@@ -62,9 +96,7 @@ const Chatbot = () => {
             className="w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300"
           />
           <button className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <Search className="h-5 w-5" />
           </button>
         </div>
 
@@ -86,96 +118,128 @@ const Chatbot = () => {
 
       {showChat ? (
         /* Chat Interface */
-        <div className="flex-1 flex flex-col p-6 max-w-4xl mx-auto w-full">
-          <div className="flex-1 overflow-y-auto mb-4 bg-white rounded-lg shadow-md p-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`mb-4 ${
-                  message.sender === "user" ? "text-right" : "text-left"
-                }`}
-              >
-                <div
-                  className={`inline-block rounded-lg px-4 py-2 max-w-[70%] ${
-                    message.sender === "user"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {message.text}
-                </div>
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Message area - only this should scroll */}
+          <div className="absolute inset-0 overflow-y-auto pt-6 pb-20 px-6">
+            <div className="max-w-6xl mx-auto w-full">
+              <div className="bg-white shadow-sm border border-gray-200 rounded-md p-4 mb-4">
+                {messages.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-gray-500">
+                    <HelpCircle className="h-12 w-12 text-gray-300 mb-2" />
+                    <p>Ask the Farm Assistant anything about poultry farming or livestock!</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`mb-4 ${
+                        message.sender === "user" ? "text-right" : "text-left"
+                      }`}
+                    >
+                      <div
+                        className={`inline-block rounded-lg px-4 py-3 max-w-[70%] ${
+                          message.sender === "user"
+                            ? "bg-[#A8E6CF] text-white"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {message.sender === "bot" ? (
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown>
+                              {message.text}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          message.text
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {loading && (
+                  <div className="text-left mb-4">
+                    <div className="inline-block rounded-lg px-4 py-2 bg-gray-100 text-gray-800">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+            </div>
           </div>
           
-          <form onSubmit={handleSendMessage} className="flex items-center">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 border border-gray-300 rounded-l-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-300"
-            />
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-3 rounded-r-lg hover:bg-green-700 transition-colors"
-            >
-              <Send className="h-5 w-5" />
-            </button>
-          </form>
+          {/* Input form - fixed at bottom with no scrolling */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-green-50 to-transparent py-4 px-6">
+            <div className="max-w-6xl mx-auto w-full">
+              <form onSubmit={handleSendMessage} className="w-full">
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Type your farming question..."
+                    className="w-full pl-4 pr-12 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-300 text-gray-700 bg-white shadow-md"
+                    disabled={loading}
+                  />
+                  <button 
+                    type="submit"
+                    className="absolute right-0 top-0 bottom-0 bg-[#A8E6CF] hover:bg-green-400 text-white px-4 rounded-r-lg transition-colors flex items-center justify-center"
+                    disabled={loading}
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       ) : (
         /* Main Content Area - Central Ask Assistant */
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
           <div className="text-center mb-10">
             <div className="inline-block p-4 rounded-full bg-white shadow-md mb-4">
-              <HelpCircle className="h-10 w-10 text-green-600" />
+              <HelpCircle className="h-10 w-10 text-[#A8E6CF]" />
             </div>
-            <h2 className="text-2xl font-medium text-gray-800 mb-2">Farm Assistant</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Farm Assistant</h2>
             <p className="text-gray-600 max-w-md mx-auto">
-              Your agricultural companion for all farming and livestock needs. Ask me anything!
+              Your agricultural companion for all farming and livestock needs. Ask me anything about poultry farming, egg production, or animal health!
             </p>
           </div>
 
           <div className="w-full max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div 
-                className="p-5 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-green-200 cursor-pointer hover:translate-y-[-2px]"
-                onClick={() => handleSuggestionClick("What are the symptoms of common livestock diseases?")}
-              >
-                <p className="text-gray-600">What are the symptoms of common livestock diseases?</p>
-              </div>
-              <div 
-                className="p-5 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-green-200 cursor-pointer hover:translate-y-[-2px]"
-                onClick={() => handleSuggestionClick("How often should I vaccinate my pet?")}
-              >
-                <p className="text-gray-600">How often should I vaccinate my pet?</p>
-              </div>
-              <div 
-                className="p-5 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-green-200 cursor-pointer hover:translate-y-[-2px]"
-                onClick={() => handleSuggestionClick("What's the best fertilizer for my crops this season?")}
-              >
-                <p className="text-gray-600">What's the best fertilizer for my crops this season?</p>
-              </div>
+              {suggestions.slice(0, 6).map((suggestion, index) => (
+                <div 
+                  key={index}
+                  className="p-5 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-[#A8E6CF] cursor-pointer hover:translate-y-[-2px]"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <p className="text-gray-600">{suggestion}</p>
+                </div>
+              ))}
             </div>
 
-            <div className="relative">
+            <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Ask me anything about farming or livestock"
+                placeholder="Ask me anything about poultry farming or livestock"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full pl-4 pr-14 py-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-300 shadow-sm text-gray-700"
+                className="w-full pl-4 pr-12 py-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#A8E6CF] shadow-sm text-gray-700"
               />
               <button 
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-600 text-white p-2 rounded-full hover:bg-green-700 transition-colors"
+                className="absolute right-0 top-0 bottom-0 bg-[#A8E6CF] text-white px-4 rounded-r-lg hover:bg-green-400 transition-colors flex items-center justify-center"
                 onClick={() => {
                   if (inputValue.trim()) {
                     setShowChat(true);
                     setTimeout(() => handleSendMessage({ preventDefault: () => {} }), 100);
                   }
                 }}
+                disabled={loading}
               >
                 <ArrowRight className="h-5 w-5" />
               </button>

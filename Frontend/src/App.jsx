@@ -28,14 +28,19 @@ import FinancialRecord from "./pages/FinancialRecord";
 
 const AuthenticatedLayout = ({ children }) => {
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
       <Sidebar />
-      <div className="flex-1 ml-28 bg-white flex flex-col h-screen overflow-auto">
+      <div className="
+        flex-1 bg-white flex flex-col overflow-auto
+        md:ml-28 md:mb-0
+        ml-0 mb-16
+      ">
         {children}
       </div>
     </div>
   );
 };
+
 
 function App() {
   useEffect(() => {

@@ -60,48 +60,82 @@ exports.register = async (req, res) => {
 // Login user
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, userType } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (!userType) {
+      return res.status(400).json({ message: 'User type is required' });
     }
 
-    // Verify password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (userType === 'Vet') {
+      return res.status(200).json({ message: 'Vet login is in progress. Please check back later.' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id }, config.secret, {
-    });
-
-    // Create a login session
-    const session = new LoginSession({
-      userId: user._id,
-      token
-    });
-
-    await session.save();
-
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        userType: user.userType,
-        farmDetails:user.farmDetails
+    // For Farmer
+    if (userType === 'Farmer') {
+      const user = await User.findOne({ email, userType: 'Farmer' });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
       }
-    });
+
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const token = jwt.sign({ id: user._id }, config.secret, {});
+      const session = new LoginSession({ userId: user._id, token });
+      await session.save();
+
+      return res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          userType: user.userType,
+          farmDetails: user.farmDetails
+        }
+      });
+    }
+
+    // For Worker
+    if (userType === 'Worker') {
+      const worker = await Worker.findOne({ email });
+      if (!worker) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const isMatch = await worker.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const token = jwt.sign({ id: worker._id }, config.secret, {});
+      const session = new LoginSession({ userId: worker._id, token });
+      await session.save();
+
+      return res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: worker._id,
+          username: worker.username,
+          email: worker.email,
+          userType: 'Worker',
+          farmerId: worker.farmerId
+        }
+      });
+    }
+
+    return res.status(400).json({ message: 'Invalid user type' });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 exports.addWorker = async (req, res) => {
   try {

@@ -44,15 +44,23 @@ const Sidebar = () => {
     },
     {
       path: "/financial-record",
-      label: "Financail Record",
+      label: "Financial Record",
       image: dollarBag
     },
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-28 bg-[#DFFFE0] shadow-lg z-50 flex items-center justify-center">
-      {/* Navigation Items */}
-      <div className="flex flex-col gap-4 items-center justify-center">
+    <div className="
+      fixed bg-[#DFFFE0] shadow-lg z-50
+      md:top-0 md:left-0 md:h-full md:w-28 md:flex md:flex-col
+      bottom-0 left-0 w-full h-16 flex flex-row">
+      
+      {/* Navigation Items Container - with proper overflow handling */}
+      <div className="
+        flex w-full h-full
+        md:items-start md:justify-start md:flex-col md:overflow-y-auto md:overflow-x-hidden md:py-4
+        items-center justify-start flex-row overflow-x-auto overflow-y-hidden px-2">
+        
         {navItems.map((item) => (
           <SidebarItem
             key={item.path}
@@ -67,27 +75,44 @@ const Sidebar = () => {
   );
 };
 
-// Updated SidebarItem Component
+// Responsive SidebarItem Component
 const SidebarItem = ({ image, label, active, to }) => {
   return (
-    <Link to={to} className="w-full no-underline text-black">
-      <div className={`w-full py-2 flex flex-col items-center justify-center rounded-lg transition-all duration-200 ${
-        active
+    <Link to={to} className="
+      no-underline text-black flex-shrink-0
+      md:w-full md:mb-3 md:px-2
+      w-16">
+      
+      <div className={`
+        flex flex-col items-center justify-center rounded-lg transition-all duration-200
+        md:w-full md:py-3
+        py-2 h-full
+        ${active
           ? 'bg-gradient-to-r from-green-200 to-green-100 shadow-md'
           : 'hover:bg-green-100 hover:shadow-sm'
-      }`}>
+        }`}>
+        
         {/* Image container */}
-        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+        <div className="
+          flex-shrink-0 flex items-center justify-center
+          md:w-8 md:h-8
+          w-7 h-7">
           <img
             src={image}
             alt={label}
-            className="w-6 h-6 object-contain"
+            className="
+              object-contain
+              md:w-5 md:h-5
+              w-4 h-4"
           />
         </div>
+        
         {/* Text below the image */}
-        <span className={`text-xs font-medium mt-1 text-center ${
-          active ? 'text-green-800' : 'text-gray-700'
-        }`}>
+        <span className={`
+          font-medium text-center truncate
+          md:text-xs md:mt-1 md:w-full
+          text-[10px] mt-0.5 w-14
+          ${active ? 'text-green-800' : 'text-gray-700'}`}>
           {label}
         </span>
       </div>

@@ -1,5 +1,10 @@
 const express = require('express');
 const dotenv = require('dotenv');
+
+// Load environment variables
+dotenv.config();
+
+
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const chickenRoutes = require('./routes/chicken');
@@ -13,9 +18,7 @@ const { verifyToken } = require('./middlewares/auth');
 
 // Import the database connection
 const connectDB = require('./config/db');
-
-// Load environment variables
-dotenv.config();
+const farmAnalysisRoute = require('./routes/farmAnalysis');
 
 // Initialize Express app
 const app = express();
@@ -25,7 +28,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
 connectDB();
 
 // Routes
@@ -37,6 +39,7 @@ app.use('/api/egg-production', verifyToken, eggProductionRoutes);
 app.use('/api/mortality', verifyToken, mortalityRoutes);
 app.use('/api/farm', verifyToken, farm);
 app.use('/api/financial', verifyToken, financialRoutes);
+app.use('/api/farm-analysis', farmAnalysisRoute);
 
 // Default route
 app.get('/', (req, res) => {
